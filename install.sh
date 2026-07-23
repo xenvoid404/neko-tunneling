@@ -149,14 +149,59 @@ setup_first() {
 	print_ok "Setup dasar selesai."
 }
 
-main() {
-	check_arch
-	check_root
-	check_virt
-	check_os
-	check_internet
+setup_swap() {
+	print_info "Konfigurasi swap RAM"
 
-	setup_first
+	local current_mb target_mb=2048
+	current_mb=$(free -m | awk '/^Swap:/ {print $2}')
+	current_mb=${current_mb:-0}
+
+	if ((current_mb < target_mb)); then
+		local deficit=$((target_mb - current_mb))
+		local idx=1
+
+		while ((deficit > 0)); do
+			local size=$deficit
+			((size > 1024)) && size=1024
+
+			local file="/swapfile${idx}"
+			while [[ -f "$file" ]]; do
+				((idx++))
+				file="/swapfile${idx}"
+			done
+
+			dd if=/dev/zero of="$file" bs=1M count="$size" status=progress
+			chmod 600 "$file"
+			mkswap "$file"
+			swapon "$file"
+
+			grep -q "$file" /etc/fstab || echo "$file none swap sw 0 0" >>/etc/fstab
+			deficit=$((deficit - size))
+			((idx++))
+		done
+	fi
+
+	local level=60
+	sysctl "vm.swappiness=${level}" 2>/dev/null || true
+
+	if grep -q "^vm.swappiness" /etc/sysctl.conf; then
+		sed -i "s/^vm.swappiness.*/vm.swappiness=${level}/" /etc/sysctl.conf
+	else
+		echo "vm.swappiness=${level}" >>/etc/sysctl.conf
+	fi
+
+	print_ok "Swap RAM berhasil diatur."
+}
+
+main() {
+	#check_arch
+	#check_root
+	#check_virt
+	#check_os
+	#check_internet
+
+	#setup_first
+	setup_swap
 }
 
 main "$@"
