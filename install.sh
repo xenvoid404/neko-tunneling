@@ -402,6 +402,45 @@ setup_xray() {
 	verify_service xray || die "Xray gagal dijalankan."
 }
 
+setup_badvpn() {
+	print_info "Instal BadVPN UDPGW"
+	disable_service badvpn
+	kill_port 36712
+
+	if [[ -x /usr/local/bin/badvpn ]]; then
+		print_info "BadVPN UDPGW sudah terpasang, lewati kompilasi ulang."
+	else
+		ensure_pkg cmake gcc make unzip
+		local build_dir="/tmp/badvpn-build"
+		rm -rf "$build_dir"
+		mkdir -p "$build_dir"
+		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
+
+		download "${GH_RAW}/badvpn/badvpn-1.999.130.zip" "badvpn-1.999.130.zip"
+		unzip -q "badvpn-1.999.130.zip"
+		cd "badvpn-1.999.130"
+
+		mkdir -p build
+		cd build
+
+		cmake .. -DBUILD_NOTHING_BY_DEFAULT=1 -DBUILD_UDPGW=1
+		make
+
+		cp udpgw/badvpn-udpgw /usr/local/bin/badvpn
+		chmod +x /usr/local/bin/badvpn
+
+		popd >/dev/null
+		rm -rf "$build_dir"
+	fi
+
+	download "${GH_RAW}/config/systemd/badvpn.service" /etc/systemd/system/badvpn.service
+
+	systemctl daemon-reload
+	systemctl enable badvpn >/dev/null 2>&1
+	systemctl restart badvpn || true
+	verify_service badvpn || die "Service badvpn gagal jalan."
+}
+
 main() {
 	#check_arch
 	#check_root
@@ -413,7 +452,8 @@ main() {
 	#setup_swap
 	#setup_dropbear
 	#setup_warp
-	setup_xray
+	#setup_xray
+	setup_badvpn
 }
 
 main "$@"
