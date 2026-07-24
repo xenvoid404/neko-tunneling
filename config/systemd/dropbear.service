@@ -1,0 +1,12 @@
+[Unit]
+Description=Lightweight SSH server
+Documentation=man:dropbear(8)
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/dropbear -EF -p 127.0.0.1:90 -p 127.0.0.1:143 -p 127.0.0.1:69 -b /etc/banner.why -W 65536 
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
