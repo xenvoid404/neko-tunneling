@@ -1,0 +1,79 @@
+{
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 1057,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "email": "default"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/vless-ws"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vless-ws"
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 1058,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "email": "default"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "vless-grpc"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vless-grpc"
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 1059,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "email": "default"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "httpupgradeSettings": {
+          "path": "/vless-up"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vless-up"
+    }
+  ]
+}

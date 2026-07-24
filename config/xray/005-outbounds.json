@@ -1,0 +1,21 @@
+{
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "block"
+    },
+    {
+      "protocol": "socks",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 40000
+      },
+      "tag": "warp"
+    }
+  ]
+}

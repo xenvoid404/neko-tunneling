@@ -1,0 +1,79 @@
+{
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 1054,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "alterId": 0,
+            "email": "default"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/vmess-ws"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vmess-ws"
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 1055,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "alterId": 0,
+            "email": "default"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "vmess-grpc"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vmess-grpc"
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 1056,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "63849be2-bfea-435c-99f7-4422e9bac91d",
+            "alterId": 0,
+            "email": "default"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "httpupgradeSettings": {
+          "path": "/vmess-up"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vmess-up"
+    }
+  ]
+}

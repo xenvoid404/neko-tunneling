@@ -373,6 +373,35 @@ setup_warp() {
 	fi
 }
 
+setup_xray() {
+	print_info "Instal Xray"
+	disable_service xray
+	kill_port 62789 1054 1055 1056 1057 1058 1059 1060 1061 1062
+	ensure_pkg jq unzip
+
+	download "${GH_RAW}/bin/xray" /usr/local/sbin/xray
+	chmod +x /usr/local/sbin/xray
+
+	reset_dir /etc/xray
+	reset_dir /var/log/xray
+	mkdir -p /etc/xray/conf.d
+	mkdir -p /var/log/xray
+	touch /var/log/xray/access.log /var/log/xray/error.log
+
+	download "${GH_RAW}/config/xray.zip" /tmp/xray.zip
+	unzip -oq /tmp/xray.zip -d /etc/xray/conf.d/
+	rm -f /tmp/xray.zip
+
+	download "${GH_RAW}/config/geoip.dat" /usr/local/share/xray/geoip.dat
+	download "${GH_RAW}/config/geosite.dat" /usr/local/share/xray/geosite.dat
+	download "${GH_RAW}/config/systemd/xray.service" /etc/systemd/system/xray.service
+
+	systemctl daemon-reload
+	systemctl enable xray >/dev/null 2>&1
+	systemctl restart xray || true
+	verify_service xray || die "Xray gagal dijalankan."
+}
+
 main() {
 	#check_arch
 	#check_root
@@ -383,7 +412,8 @@ main() {
 	#setup_first
 	#setup_swap
 	#setup_dropbear
-	setup_warp
+	#setup_warp
+	setup_xray
 }
 
 main "$@"
