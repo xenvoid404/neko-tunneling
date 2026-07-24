@@ -1,0 +1,13 @@
+[Unit]
+Description=Neko Tunneling API
+Documentation=https://github.com/xenvoid404/neko-tunneling
+After=network.target nss-lookup.target
+
+[Service]
+User=root
+Group=root
+ExecStart=/usr/local/bin/gokil
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
