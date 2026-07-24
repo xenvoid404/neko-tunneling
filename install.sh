@@ -300,10 +300,77 @@ setup_dropbear() {
 	download "${GH_RAW}/config/systemd/dropbear.service" /usr/lib/systemd/system/dropbear.service
 
 	systemctl daemon-reload
-	systemctl enable dropbear
+	systemctl enable dropbear >/dev/null 2>&1
 	systemctl restart dropbear || true
 
 	verify_service dropbear || die "Dropbear gagal dijalankan."
+}
+
+setup_warp() {
+	print_info "Instal WARP (wireproxy)"
+	disable_service wireproxy
+	kill_port 40000
+	ensure_pkg curl
+	reset_dir /etc/wireproxy
+	pushd /etc/wireproxy >/dev/null || die "Gagal masuk /etc/wireproxy"
+
+	download "${GH_RAW}/bin/wgcf" /usr/local/bin/wgcf
+	download "${GH_RAW}/bin/wireproxy" /usr/local/sbin/wireproxy
+	chmod +x /usr/local/bin/wgcf /usr/local/sbin/wireproxy
+
+	local warp_ready=true
+	if [[ ! -f wgcf-account.toml ]]; then
+		local attempt=1 max=5 ok=false
+		while ((attempt <= max)); do
+			if wgcf register --accept-tos --config wgcf-account.toml; then
+				ok=true
+				break
+			fi
+			print_warn "Gagal registrasi WARP (${attempt}/${max}). Retry 3 detik..."
+			sleep 3
+			((attempt++))
+		done
+		[[ "$ok" == true ]] || warp_ready=false
+	fi
+
+	[[ "$warp_ready" != true ]] ||
+		wgcf generate --config wgcf-account.toml --profile wgcf-profile.conf
+
+	download "${GH_RAW}/config/warp.conf" /tmp/warp.conf
+
+	local priv pub ep
+	priv=$(grep 'PrivateKey' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
+	pub=$(grep 'PublicKey' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
+	ep=$(grep 'Endpoint' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
+
+	if [[ -z "$priv" || -z "$pub" || -z "$ep" ]]; then
+		priv="ISI_MANUAL_PRIVATE_KEY_DISINI"
+		pub="ISI_MANUAL_PUBLIC_KEY_DISINI"
+		ep="engage.cloudflareclient.com:2408"
+		warp_ready=false
+	fi
+
+	sed -e "s|__PRIVATE_KEY__|${priv}|g" -e "s|__PUBLIC_KEY__|${pub}|g" -e "s|__ENDPOINT__|${ep}|g" /tmp/warp.conf >warp.conf
+	rm -f /tmp/warp.conf
+	popd >/dev/null
+
+	download "${GH_RAW}/config/systemd/wireproxy.service" /etc/systemd/system/wireproxy.service
+
+	systemctl daemon-reload
+	systemctl enable wireproxy >/dev/null 2>&1
+
+	if [[ "$warp_ready" == true ]]; then
+		systemctl restart wireproxy || true
+		if systemctl is-active --quiet wireproxy; then
+			print_ok "WARP (wireproxy) aktif."
+		else
+			print_err "Service wireproxy gagal jalan. Log terakhir:"
+			journalctl -u wireproxy -n 15 --no-pager 2>/dev/null || true
+		fi
+	else
+		print_warn "File WARP terpasang, tetapi kredensial kosong."
+		print_warn "Isi manual di /etc/wireproxy/warp.conf lalu: systemctl restart wireproxy"
+	fi
 }
 
 main() {
@@ -315,7 +382,8 @@ main() {
 
 	#setup_first
 	#setup_swap
-	setup_dropbear
+	#setup_dropbear
+	setup_warp
 }
 
 main "$@"
