@@ -62,7 +62,7 @@ download() {
 		((attempt++))
 		sleep 2
 	done
-	die "Gagal mengunduh sumber daya setelah $max_attempt percobaan."
+	die "Gagal mengunduh sumber daya dari $url setelah $max_attempt percobaan."
 }
 
 disable_service() {
@@ -178,7 +178,7 @@ check_internet() {
 }
 
 # ===============================================
-# Tahap Instalasu
+# Tahap Instalasi
 # ===============================================
 setup_first() {
 	print_info "Konfigurasi dasar sistem"
@@ -339,9 +339,9 @@ setup_warp() {
 	download "${GH_RAW}/config/warp.conf" /tmp/warp.conf
 
 	local priv pub ep
-	priv=$(grep 'PrivateKey' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
-	pub=$(grep 'PublicKey' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
-	ep=$(grep 'Endpoint' wgcf-profile.conf | cut -d= -f2- | tr -d ' ') || true
+	priv=$(grep 'PrivateKey' wgcf-profile.conf 2>/dev/null | cut -d= -f2- | tr -d ' ') || true
+	pub=$(grep 'PublicKey' wgcf-profile.conf 2>/dev/null | cut -d= -f2- | tr -d ' ') || true
+	ep=$(grep 'Endpoint' wgcf-profile.conf 2>/dev/null | cut -d= -f2- | tr -d ' ') || true
 
 	if [[ -z "$priv" || -z "$pub" || -z "$ep" ]]; then
 		priv="ISI_MANUAL_PRIVATE_KEY_DISINI"
@@ -392,6 +392,7 @@ setup_xray() {
 	unzip -oq /tmp/xray.zip -d /etc/xray/conf.d/
 	rm -f /tmp/xray.zip
 
+	mkdir -p /usr/local/share/xray
 	download "${GH_RAW}/config/geoip.dat" /usr/local/share/xray/geoip.dat
 	download "${GH_RAW}/config/geosite.dat" /usr/local/share/xray/geosite.dat
 	download "${GH_RAW}/config/systemd/xray.service" /etc/systemd/system/xray.service
@@ -423,11 +424,18 @@ setup_badvpn() {
 		mkdir -p build
 		cd build
 
-		cmake .. -DBUILD_NOTHING_BY_DEFAULT=1 -DBUILD_UDPGW=1
-		make
+		cmake .. -DBUILD_NOTHING_BY_DEFAULT=1 -DBUILD_UDPGW=1 >/dev/null 2>&1 &
+		run_with_timer $! "Menyiapkan konfigurasi"
+		wait $! || die "Kompilasi gagal di tahap configure!"
+
+		make >/dev/null 2>&1 &
+		run_with_timer $! "Mengkompilasi source code"
+		wait $! || die "Kompilasi gagal di tahap make!"
 
 		cp udpgw/badvpn-udpgw /usr/local/bin/badvpn
 		chmod +x /usr/local/bin/badvpn
+
+		print_ok "Kompilasi BadVPN UDPGW selesai"
 
 		popd >/dev/null
 		rm -rf "$build_dir"
@@ -441,19 +449,208 @@ setup_badvpn() {
 	verify_service badvpn || die "Service badvpn gagal jalan."
 }
 
-main() {
-	#check_arch
-	#check_root
-	#check_virt
-	#check_os
-	#check_internet
+setup_fail2ban() {
+	print_info "Instal Fail2Ban"
+	disable_service fail2ban
+	ensure_pkg fail2ban
+	download "${GH_RAW}/config/jail.local" /etc/fail2ban/jail.local
+	systemctl daemon-reload
+	systemctl enable fail2ban >/dev/null 2>&1
+	systemctl restart fail2ban || true
+	verify_service fail2ban || die "Service fail2ban gagal jalan."
+}
 
-	#setup_first
-	#setup_swap
-	#setup_dropbear
-	#setup_warp
-	#setup_xray
+setup_iptables() {
+	print_info "Konfigurasi iptables"
+	ensure_pkg iptables iptables-persistent netfilter-persistent
+
+	grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >>/etc/sysctl.conf
+	grep -q "^net.ipv6.conf.all.forwarding=1" /etc/sysctl.conf || echo "net.ipv6.conf.all.forwarding=1" >>/etc/sysctl.conf
+	sysctl -p 2>/dev/null || true
+
+	local eth eth6
+	eth=$(ip -o -4 route show to default | awk '{print $5}')
+	eth6=$(ip -o -6 route show to default | awk '{print $5}' | head -n1)
+
+	iptables -F || true
+	iptables -X || true
+	iptables -t nat -F || true
+	iptables -t nat -X || true
+	ip6tables -F || true
+	ip6tables -X || true
+	ip6tables -t nat -F || true
+	ip6tables -t nat -X || true
+
+	iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+	iptables -A INPUT -i lo -j ACCEPT
+	ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+	ip6tables -A INPUT -i lo -j ACCEPT
+
+	local ports=(
+		22 80 443 444 8080 8443 69 90 143 3000
+		40000 62789 1054 1055 1056 1057 1058
+		1059 1060 1061 1062
+	)
+	local port
+	for port in "${ports[@]}"; do
+		iptables -A INPUT -p tcp --dport "$port" -j ACCEPT
+		iptables -A INPUT -p udp --dport "$port" -j ACCEPT
+	done
+
+	iptables -A INPUT -p udp --dport 36712 -j ACCEPT
+	ip6tables -A INPUT -p udp --dport 36712 -j ACCEPT
+
+	local torrent_strings=(
+		"BitTorrent" "BitTorrent protocol" "peer_id=" ".torrent"
+		"announce.php?passkey=" "torrent" "announce" "info_hash"
+		"/default.ida?" ".exe?/c+dir" ".exe?/c_tftp" "peer_id"
+		"bittorrent-announce" "find_node" "get_peers" "announce_peers"
+	)
+	local str
+	for str in "${torrent_strings[@]}"; do
+		iptables -A FORWARD -m string --string "$str" --algo bm -j DROP
+	done
+
+	local ranges=(
+		"1:21" "23:52" "54" "56:68" "70:79" "81:142"
+		"144:442" "444:807" "809:1193" "1195:2221" "2223:5299"
+		"5301:5354" "5356:7099" "7101:7199" "7201:7299"
+		"7301:7399" "7401:7499" "7501:7599" "7601:8487"
+		"8489:9999" "10001:24999" "25001:65535"
+	)
+	local range
+	if [[ -n "$eth" ]]; then
+		for range in "${ranges[@]}"; do
+			iptables -t nat -A PREROUTING -i "$eth" -p udp -m udp --dport "$range" -j DNAT --to-destination :36712
+		done
+		iptables -t nat -A POSTROUTING -o "$eth" -j MASQUERADE
+	fi
+	if [[ -n "$eth6" ]]; then
+		for range in "${ranges[@]}"; do
+			ip6tables -t nat -A PREROUTING -i "$eth6" -p udp -m udp --dport "$range" -j DNAT --to-destination :36712
+		done
+		ip6tables -t nat -A POSTROUTING -o "$eth6" -j MASQUERADE
+	fi
+
+	netfilter-persistent save >/dev/null 2>&1 || true
+	netfilter-persistent reload >/dev/null 2>&1 || true
+
+	print_ok "Iptables berhasil dikonfigurasi."
+}
+
+setup_cert() {
+	print_info "Unduh & pasang acme.sh"
+	if [[ ! -d "/root/.acme.sh" ]]; then
+		local acme_email="admin@changeme.com"
+		curl -s https://get.acme.sh | sh -s "email=${acme_email}" >/dev/null 2>&1 || true
+		if [[ -f "/root/.acme.sh/acme.sh" ]]; then
+			/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt >/dev/null 2>&1 || true
+			print_ok "acme.sh terpasang (CA: Let's Encrypt)."
+		else
+			print_warn "Gagal memasang acme.sh otomatis."
+		fi
+	fi
+
+	print_info "Buat sertifikat self-signed default"
+	ensure_pkg openssl
+
+	local cert_dir="/etc/nekotun/certs"
+	reset_dir /etc/nekotun
+	mkdir -p "$cert_dir"
+
+	echo "changeme" >/root/.mydomain
+
+	local priv="${cert_dir}/private.key"
+	local pub="${cert_dir}/fullchain.cer"
+	openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout "$priv" -out "$pub" -subj "/C=ID/ST=Local/L=Local/O=NekoTun/CN=changeme" >/dev/null 2>&1
+	chmod 600 "$priv"
+	chmod 644 "$pub"
+
+	if [[ -s "$priv" && -s "$pub" ]]; then
+		print_ok "Sertifikat siap di ${cert_dir}"
+	else
+		die "Gagal membuat sertifikat SSL."
+	fi
+}
+
+setup_neofetch() {
+	print_info "Install neofetch"
+
+	if [[ -x /usr/local/bin/neofetch ]]; then
+		print_info "Neofetch sudah terpasang, lewati kompilasi ulang."
+	else
+		ensure_pkg make unzip
+		local build_dir="/tmp/neofetch-build"
+		rm -rf "$build_dir"
+		mkdir -p "$build_dir"
+		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
+
+		download "${GH_RAW}/neofetch/neofetch-7.1.0.zip" "neofetch-7.1.0.zip"
+		unzip -q "neofetch-7.1.0.zip"
+		cd "neofetch-7.1.0"
+
+		make --prefix=/usr/local install >/dev/null 2>&1 &
+		run_with_timer $! "Menginstal Neofetch"
+		wait $! || die "Kompilasi gagal di tahap make!"
+
+		print_ok "Instalasi Neofetch selesai"
+
+		popd >/dev/null
+		rm -rf "$build_dir"
+	fi
+}
+
+setup_final() {
+	print_info "Konfigurasi final"
+	disable_service gosip
+	disable_service gokil
+	ensure_pkg unzip make vnstat screen
+	kill_port 3000 80 8080 443 444 8443
+
+	download "${GH_RAW}/bin/gosip" /usr/local/sbin/gosip
+	download "${GH_RAW}/bin/gokil" /usr/local/bin/gokil
+	download "${GH_RAW}/bin/menu" /usr/local/bin/menu
+	chmod +x /usr/local/sbin/gosip /usr/local/bin/gokil /usr/local/bin/menu
+
+	download "${GH_RAW}/config/systemd/gosip.service" /etc/systemd/system/gosip.service
+	download "${GH_RAW}/config/systemd/gokil.service" /etc/systemd/system/gokil.service
+
+	systemctl daemon-reload
+	systemctl enable gosip gokil >/dev/null 2>&1
+	systemctl restart gosip gokil || true
+	verify_service gosip || die "Konfigurasi final gagal."
+	verify_service gokil || die "Konfigurasi final gagal."
+}
+
+# ===============================================
+# Fungsi Utama
+# ===============================================
+main() {
+	check_arch
+	check_root
+	check_virt
+	check_os
+	check_internet
+
+	setup_first
+	setup_swap
+	setup_dropbear
+	setup_warp
+	setup_xray
 	setup_badvpn
+	setup_fail2ban
+	setup_iptables
+	setup_cert
+	setup_neofetch
+	setup_final
+
+	print_ok "Seluruh proses instalasi selesai!"
+	sleep 2
+
+	if [[ -x /usr/local/bin/menu ]]; then
+		clear
+		exec /usr/local/bin/menu
+	fi
 }
 
 main "$@"
