@@ -54,7 +54,10 @@ download() {
 	local max_attempt=3
 	while ((attempt <= max_attempt)); do
 		if curl -fL --progress-bar --connect-timeout 15 "$url" -o "$dest"; then
-			[[ -s "$dest" ]] && return 0
+			if [[ -s "$dest" ]]; then
+				echo ""
+				return 0
+			fi
 		fi
 		((attempt++))
 		sleep 2
@@ -104,15 +107,15 @@ run_with_timer() {
 	local msg=$2
 	local seconds=0
 
-	echo -ne "${BLUE}[INFO]${NC} ${msg}... \e[s"
+	echo -ne "${BLUE}[INFO]${NC} ${msg}... 000"
 
 	while kill -0 "$pid" 2>/dev/null; do
-		printf "\e[u[%02ds]" "$seconds"
 		sleep 1
-		((seconds++))
+		seconds=$((seconds + 1))
+		printf "\b\b\b%03d" "$seconds"
 	done
 
-	printf "\e[u[%02ds] ${GREEN}Selesai${NC}\n" "$seconds"
+	printf "\b\b\b%03d ${GREEN}Selesai${NC}\n" "$seconds"
 }
 
 # ===============================================
