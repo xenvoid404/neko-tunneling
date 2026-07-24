@@ -62,6 +62,59 @@ download() {
 	die "Gagal mengunduh sumber daya setelah $max_attempt percobaan."
 }
 
+disable_service() {
+	local svc="$1"
+	if systemctl is-active --quiet "$svc" 2>/dev/null; then
+		systemctl stop "$svc" 2>/dev/null || true
+	fi
+	systemctl disable "$svc" 2>/dev/null || true
+}
+
+kill_port() {
+	for port in "$@"; do
+		local pids
+		pids=$(ss -tulwnp 2>/dev/null | grep -P ":${port}(?=\s|,|$)" | grep -oP 'pid=\K[0-9]+' | sort -u) || true
+		if [[ -n "$pids" ]]; then
+			kill -9 $pids 2>/dev/null || true
+		fi
+	done
+}
+
+reset_dir() {
+	local dir="$1"
+	if [[ -d "$dir" ]]; then
+		rm -rf "$dir"
+	fi
+	mkdir -p "$dir"
+}
+
+verify_service() {
+	local svc="$1"
+	if systemctl is-active --quiet "$svc"; then
+		print_ok "Service ${svc} aktif."
+		return 0
+	fi
+	print_err "Service ${svc} gagal jalan. Log terakhir:"
+	journalctl -u "$svc" -n 15 --no-pager 2>/dev/null || true
+	return 1
+}
+
+run_with_timer() {
+	local pid=$1
+	local msg=$2
+	local seconds=0
+
+	echo -ne "${BLUE}[INFO]${NC} ${msg}... \e[s"
+
+	while kill -0 "$pid" 2>/dev/null; do
+		printf "\e[u[%02ds]" "$seconds"
+		sleep 1
+		((seconds++))
+	done
+
+	printf "\e[u[%02ds] ${GREEN}Selesai${NC}\n" "$seconds"
+}
+
 # ===============================================
 # Tahap Pemeriksaan Awal
 # ===============================================
@@ -193,6 +246,63 @@ setup_swap() {
 	print_ok "Swap RAM berhasil diatur."
 }
 
+setup_dropbear() {
+	print_info "Instal dropbear"
+	disable_service dropbear
+	kill_port 90 143 69
+
+	local need_ver="2019.78"
+	local current_ver
+	current_ver=$(dropbear -V 2>&1 || true)
+
+	if [[ "$current_ver" == *"$need_ver"* ]]; then
+		print_info "Dropbear versi $need_ver sudah terpasang, lewati kompilasi ulang."
+	else
+		ensure_pkg build-essential zlib1g-dev bzip2
+		local build_dir="/tmp/dropbear-build"
+		rm -rf "$build_dir"
+		mkdir -p "$build_dir"
+		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
+
+		download "${GH_RAW}/dropbear/dropbear-${need_ver}.tar.bz2" "dropbear-${need_ver}.tar.bz2"
+		tar -xf "dropbear-${need_ver}.tar.bz2"
+		cd "dropbear-${need_ver}"
+
+		./configure --prefix=/usr --sbindir=/usr/sbin --bindir=/usr/bin >/dev/null 2>&1 &
+		run_with_timer $! "Menyiapkan konfigurasi"
+		wait $! || die "Kompilasi gagal di tahap configure!"
+
+		make >/dev/null 2>&1 &
+		run_with_timer $! "Mengkompilasi source code"
+		wait $! || die "Kompilasi gagal di tahap make!"
+
+		make install >/dev/null 2>&1 &
+		run_with_timer $! "Menginstal binary"
+		wait $! || die "Instalasi gagal di tahap make install!"
+
+		print_ok "Kompilasi Dropbear selesai"
+
+		popd >/dev/null
+		rm -rf "$build_dir"
+	fi
+
+	reset_dir /etc/dropbear
+	[[ -f /etc/dropbear/dropbear_rsa_host_key ]] || /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+	[[ -f /etc/dropbear/dropbear_ecdsa_host_key ]] || /usr/bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key
+
+	grep -q "/bin/false" /etc/shells || echo "/bin/false" >>/etc/shells
+	grep -q "/usr/sbin/nologin" /etc/shells || echo "/usr/sbin/nologin" >>/etc/shells
+
+	download "${GH_RAW}/config/banner.why" /etc/banner.why
+	download "${GH_RAW}/config/systemd/dropbear.service" /usr/lib/systemd/system/dropbear.service
+
+	systemctl daemon-reload
+	systemctl enable dropbear
+	systemctl restart dropbear || true
+
+	verify_service dropbear || die "Dropbear gagal dijalankan."
+}
+
 main() {
 	#check_arch
 	#check_root
@@ -201,7 +311,8 @@ main() {
 	#check_internet
 
 	#setup_first
-	setup_swap
+	#setup_swap
+	setup_dropbear
 }
 
 main "$@"
