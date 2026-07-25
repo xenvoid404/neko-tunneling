@@ -280,6 +280,84 @@ trojan_menu() {
 # ===============================================
 # Menu Features
 # ===============================================
+features_check_bandwidth() {
+	while true; do
+		clear
+		echo -e ""
+		echo -e "${TL}${HL}${TR}"
+		echo -e "${VL}${HEADER}                  CEK BANDWIDTH                  ${NC}"
+		echo -e "${BL}${HL}${BR}"
+		echo -e "${TL}${HL}${TR}"
+		echo -e "${VL}${BLUE2} 1.)${NC} ${ORANGE1}${BULLET}${NC} Cek Bandwidth Bulanan"
+		echo -e "${VL}${BLUE2} 2.)${NC} ${ORANGE1}${BULLET}${NC} Cek Bandwidth Harian"
+		echo -e "${VL}${BLUE2} 3.)${NC} ${ORANGE1}${BULLET}${NC} Cek Bandwidth 5 Menit"
+		echo -e "${VL}${BLUE2} 4.)${NC} ${ORANGE1}${BULLET}${NC} Cek Bandwidth Realtime"
+		echo -e "${VL}${BLUE1}${HL}${NC}"
+		echo -e "${VL}${BLUE2} 5.)${NC} ${ORANGE1}${BULLET}${NC} Back"
+		echo -e "${VL}${BLUE2} x.)${NC} ${ORANGE1}${BULLET}${NC} exit"
+		echo -e "${BL}${HL}${BR}"
+		echo -e ""
+
+		read -r -p " Pilih Menu [1-5 atau x] : " features_check_bandwidth_opt
+		case "$features_check_bandwidth_opt" in
+		1)
+			clear
+			echo -e "${TL}${HL}${TR}"
+			echo -e "${VL}${HEADER}                 BANDWIDTH BULANAN               ${NC}"
+			echo -e "${BL}${HL}${BR}"
+			vnstat -m
+			echo ""
+			echo -e "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+			read -r
+			;;
+		2)
+			clear
+			echo -e "${TL}${HL}${TR}"
+			echo -e "${VL}${HEADER}                 BANDWIDTH HARIAN                ${NC}"
+			echo -e "${BL}${HL}${BR}"
+			vnstat -d
+			echo ""
+			echo -e "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+			read -r
+			;;
+		3)
+			clear
+			echo -e "${TL}${HL}${TR}"
+			echo -e "${VL}${HEADER}                BANDWIDTH 5 MENIT                ${NC}"
+			echo -e "${BL}${HL}${BR}"
+			vnstat -5
+			echo ""
+			echo -e "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+			read -r
+			;;
+		4)
+			clear
+			echo -e "${TL}${HL}${TR}"
+			echo -e "${VL}${HEADER}               BANDWIDTH REALTIME                ${NC}"
+			echo -e "${BL}${HL}${BR}"
+			echo ""
+			vnstat -tr
+			echo ""
+			echo -e "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+			read -r
+			;;
+		5) break ;;
+		x | X)
+			echo -e ""
+			echo -e ""
+			exit 0
+			;;
+		*)
+			echo -e ""
+			echo -e "${RED} Input tidak valid!${NC}"
+			echo -e ""
+			sleep 1
+			continue
+			;;
+		esac
+	done
+}
+
 features_menu() {
 	while true; do
 		clear
@@ -305,6 +383,7 @@ features_menu() {
 
 		read -r -p " Pilih Menu [1-8 atau x] : " features_menu_opt
 		case "$features_menu_opt" in
+		1) features_check_bandwidth ;;
 		8) break ;;
 		x | X)
 			echo -e ""
@@ -398,7 +477,7 @@ main_check_services() {
 		clear
 		echo -e ""
 		echo -e "${TL}${HL}${TR}"
-		echo -e "${VL}${HEADER}                  STATUS SERVICE                  ${NC}"
+		echo -e "${VL}${HEADER}                  STATUS SERVICE                 ${NC}"
 		echo -e "${BL}${HL}${BR}"
 		echo -e "${TL}${HL}${TR}"
 		echo -e "${VL} OpenSSH           :  $(status_service ssh)"
