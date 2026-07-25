@@ -408,39 +408,8 @@ setup_badvpn() {
 	disable_service badvpn
 	kill_port 36712
 
-	if [[ -x /usr/local/bin/badvpn ]]; then
-		print_info "BadVPN UDPGW sudah terpasang, lewati kompilasi ulang."
-	else
-		ensure_pkg cmake gcc make unzip
-		local build_dir="/tmp/badvpn-build"
-		rm -rf "$build_dir"
-		mkdir -p "$build_dir"
-		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
-
-		download "${GH_RAW}/badvpn/badvpn-1.999.130.zip" "badvpn-1.999.130.zip"
-		unzip -q "badvpn-1.999.130.zip"
-		cd "badvpn-1.999.130"
-
-		mkdir -p build
-		cd build
-
-		cmake .. -DBUILD_NOTHING_BY_DEFAULT=1 -DBUILD_UDPGW=1 >/dev/null 2>&1 &
-		run_with_timer $! "Menyiapkan konfigurasi"
-		wait $! || die "Kompilasi gagal di tahap configure!"
-
-		make >/dev/null 2>&1 &
-		run_with_timer $! "Mengkompilasi source code"
-		wait $! || die "Kompilasi gagal di tahap make!"
-
-		cp udpgw/badvpn-udpgw /usr/local/bin/badvpn
-		chmod +x /usr/local/bin/badvpn
-
-		print_ok "Kompilasi BadVPN UDPGW selesai"
-
-		popd >/dev/null
-		rm -rf "$build_dir"
-	fi
-
+	download "${GH_RAW}/bin/badvpn" /usr/local/bin/badvpn
+	chmod +x /usr/local/bin/badvpn
 	download "${GH_RAW}/config/systemd/badvpn.service" /etc/systemd/system/badvpn.service
 
 	systemctl daemon-reload
