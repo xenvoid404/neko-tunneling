@@ -57,7 +57,7 @@ ensure_pkg() {
 	fi
 }
 
-check_status() {
+status_service() {
 	if systemctl is-active --quiet "$1"; then
 		echo -e "${GREEN}ON${NC}"
 	else
@@ -393,6 +393,29 @@ get_vnstat_info() {
 	fi
 }
 
+main_check_services() {
+	while true; do
+		clear
+		echo -e ""
+		echo -e "${TL}${HL}${TR}"
+		echo -e "${VL}${HEADER}                  STATUS SERVICE                  ${NC}"
+		echo -e "${BL}${HL}${BR}"
+		echo -e "${TL}${HL}${TR}"
+		echo -e "${VL} OpenSSH           :  $(status_service ssh)"
+		echo -e "${VL} Dropbear          :  $(status_service dropbear)"
+		echo -e "${VL} Xray              :  $(status_service xray)"
+		echo -e "${VL} Badvpn            :  $(status_service badvpn)"
+		echo -e "${VL} API               :  $(status_service gokil)"
+		echo -e "${VL} Multiplexer       :  $(status_service gosip)"
+		echo -e "${BL}${HL}${BR}"
+		echo -e ""
+		echo -e ""
+		echo -e "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+		read -r
+		break
+	done
+}
+
 main_menu() {
 	while true; do
 		clear
@@ -421,7 +444,7 @@ main_menu() {
 		echo -e "${VL} REALTIME : ${REALTIME}"
 		echo -e "${BL}${HL}${BR}"
 		echo -e "${TL}${HL}${TR}"
-		echo -e "${VL}     XRAY : $(check_status xray)   |   SSH : $(check_status dropbear)   |   MUX : $(check_status gosip)"
+		echo -e "${VL}     XRAY : $(status_service xray)   |   SSH : $(status_service dropbear)   |   MUX : $(status_service gosip)"
 		echo -e "${BL}${HL}${BR}"
 		echo -e "${TL}${HL}${TR}"
 		echo -e "${VL}${BLUE2}     1.)${NC} ${ORANGE1}${BULLET}${NC} SSH               ${BLUE2}5.)${NC} ${ORANGE1}${BULLET}${NC} FEATURES"
@@ -438,6 +461,7 @@ main_menu() {
 		3) vless_menu ;;
 		4) trojan_menu ;;
 		5) features_menu ;;
+		6) main_check_services ;;
 		7) reboot ;;
 		x | X)
 			echo -e ""
