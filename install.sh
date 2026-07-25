@@ -102,22 +102,6 @@ verify_service() {
 	return 1
 }
 
-run_with_timer() {
-	local pid=$1
-	local msg=$2
-	local seconds=0
-
-	echo -ne "${BLUE}[INFO]${NC} ${msg}... 000"
-
-	while kill -0 "$pid" 2>/dev/null; do
-		sleep 1
-		seconds=$((seconds + 1))
-		printf "\b\b\b%03d" "$seconds"
-	done
-
-	printf "\b\b\b%03d ${GREEN}Selesai${NC}\n" "$seconds"
-}
-
 # ===============================================
 # Tahap Pemeriksaan Awal
 # ===============================================
@@ -514,33 +498,6 @@ setup_cert() {
 	fi
 }
 
-setup_neofetch() {
-	print_info "Install neofetch"
-
-	if [[ -x /usr/local/bin/neofetch ]]; then
-		print_info "Neofetch sudah terpasang, lewati kompilasi ulang."
-	else
-		ensure_pkg make unzip
-		local build_dir="/tmp/neofetch-build"
-		rm -rf "$build_dir"
-		mkdir -p "$build_dir"
-		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
-
-		download "${GH_RAW}/neofetch/neofetch-7.1.0.zip" "neofetch-7.1.0.zip"
-		unzip -q "neofetch-7.1.0.zip"
-		cd "neofetch-7.1.0"
-
-		make --prefix=/usr/local install >/dev/null 2>&1 &
-		run_with_timer $! "Menginstal Neofetch"
-		wait $! || die "Kompilasi gagal di tahap make!"
-
-		print_ok "Instalasi Neofetch selesai"
-
-		popd >/dev/null
-		rm -rf "$build_dir"
-	fi
-}
-
 setup_final() {
 	print_info "Konfigurasi final"
 	disable_service gosip
@@ -551,7 +508,8 @@ setup_final() {
 	download "${GH_RAW}/bin/gosip" /usr/local/sbin/gosip
 	download "${GH_RAW}/bin/gokil" /usr/local/bin/gokil
 	download "${GH_RAW}/bin/menu" /usr/local/bin/menu
-	chmod +x /usr/local/sbin/gosip /usr/local/bin/gokil /usr/local/bin/menu
+	download "${GH_RAW}/bin/neofetch" /usr/local/bin/neofetch
+	chmod +x /usr/local/sbin/gosip /usr/local/bin/gokil /usr/local/bin/menu /usr/local/bin/neofetch
 
 	download "${GH_RAW}/config/systemd/gosip.service" /etc/systemd/system/gosip.service
 	download "${GH_RAW}/config/systemd/gokil.service" /etc/systemd/system/gokil.service
@@ -582,7 +540,6 @@ main() {
 	setup_fail2ban
 	setup_iptables
 	setup_cert
-	setup_neofetch
 	setup_final
 
 	print_ok "Seluruh proses instalasi selesai!"
