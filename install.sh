@@ -254,43 +254,15 @@ setup_dropbear() {
 	disable_service dropbear
 	kill_port 90 143 69
 
-	local need_ver="2019.78"
-	local current_ver
-	current_ver=$(dropbear -V 2>&1 || true)
-
-	if [[ "$current_ver" == *"$need_ver"* ]]; then
-		print_info "Dropbear versi $need_ver sudah terpasang, lewati kompilasi ulang."
-	else
-		ensure_pkg build-essential zlib1g-dev bzip2
-		local build_dir="/tmp/dropbear-build"
-		rm -rf "$build_dir"
-		mkdir -p "$build_dir"
-		pushd "$build_dir" >/dev/null || die "Gagal masuk ${build_dir}"
-
-		download "${GH_RAW}/dropbear/dropbear-${need_ver}.tar.bz2" "dropbear-${need_ver}.tar.bz2"
-		tar -xf "dropbear-${need_ver}.tar.bz2"
-		cd "dropbear-${need_ver}"
-
-		./configure --prefix=/usr --sbindir=/usr/sbin --bindir=/usr/bin >/dev/null 2>&1 &
-		run_with_timer $! "Menyiapkan konfigurasi"
-		wait $! || die "Kompilasi gagal di tahap configure!"
-
-		make >/dev/null 2>&1 &
-		run_with_timer $! "Mengkompilasi source code"
-		wait $! || die "Kompilasi gagal di tahap make!"
-
-		make install >/dev/null 2>&1 &
-		run_with_timer $! "Menginstal binary"
-		wait $! || die "Instalasi gagal di tahap make install!"
-
-		print_ok "Kompilasi Dropbear selesai"
-
-		popd >/dev/null
-		rm -rf "$build_dir"
-	fi
+	download "${GH_RAW}/dropbear/dropbear-2019.78.tar.gz" /tmp/dropbear-2019.78.tar.gz
+	tar -xzvf /tmp/dropbear-2019.78.tar.gz -C /tmp/
+	mv /tmp/dropbear /usr/sbin/dropbear
+	mv /tmp/dropbearkey /usr/bin/dropbearkey
+	chmod +x /usr/sbin/dropbear /usr/bin/dropbearkey
+	rm -f /tmp/dropbear-2019.78.tar.gz
 
 	reset_dir /etc/dropbear
-	[[ -f /etc/dropbear/dropbear_rsa_host_key ]] || /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+	[[ -f /etc/dropbear/dropbear_rsa_host_key ]] || /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key -s 2048
 	[[ -f /etc/dropbear/dropbear_ecdsa_host_key ]] || /usr/bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key
 
 	grep -q "/bin/false" /etc/shells || echo "/bin/false" >>/etc/shells
