@@ -62,7 +62,7 @@ download() {
 		((attempt++))
 		sleep 2
 	done
-	die "Gagal mengunduh sumber daya dari $url setelah $max_attempt percobaan."
+	die "Gagal mengunduh sumber daya setelah $max_attempt percobaan."
 }
 
 disable_service() {
@@ -153,7 +153,7 @@ check_internet() {
 		return 0
 	fi
 
-	print_warn "Mencoba memperbaiki DNS..."
+	print_warn "Mencoba memperbaiki resolver..."
 	echo "nameserver 1.1.1.1" >>/etc/resolv.conf
 	echo "nameserver 8.8.8.8" >>/etc/resolv.conf
 
@@ -480,10 +480,12 @@ setup_cert() {
 	ensure_pkg openssl
 
 	local cert_dir="/etc/nekotun/certs"
+	local cache_dir="/var/lib/nekotun/cache"
 	reset_dir /etc/nekotun
 	mkdir -p "$cert_dir"
+	mkdir -p "$cache_dir"
 
-	echo "changeme" >/root/.mydomain
+	echo "changeme" >"${cache_dir}/domain"
 
 	local priv="${cert_dir}/private.key"
 	local pub="${cert_dir}/fullchain.cer"
@@ -500,25 +502,25 @@ setup_cert() {
 
 setup_final() {
 	print_info "Konfigurasi final"
-	disable_service gosip
-	disable_service gokil
+	disable_service sovereign
 	ensure_pkg unzip make vnstat screen
 	kill_port 3000 80 8080 443 444 8443
 
-	download "${GH_RAW}/bin/gosip" /usr/local/sbin/gosip
-	download "${GH_RAW}/bin/gokil" /usr/local/bin/gokil
+	download "${GH_RAW}/bin/sovereign" /usr/local/sbin/sovereign
+	download "${GH_RAW}/config/.env" /etc/nekotun/.env
+	local random_string=$(tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 32)
+	local new_app_key="neko${random_string}"
+	sed -i "s/__APP_KEY__/${new_app_key}/g" /etc/nekotun/.env
 	download "${GH_RAW}/bin/menu" /usr/local/bin/menu
 	download "${GH_RAW}/bin/neofetch" /usr/local/bin/neofetch
-	chmod +x /usr/local/sbin/gosip /usr/local/bin/gokil /usr/local/bin/menu /usr/local/bin/neofetch
+	chmod +x /usr/local/sbin/sovereign /usr/local/bin/menu /usr/local/bin/neofetch
 
-	download "${GH_RAW}/config/systemd/gosip.service" /etc/systemd/system/gosip.service
-	download "${GH_RAW}/config/systemd/gokil.service" /etc/systemd/system/gokil.service
+	download "${GH_RAW}/config/systemd/sovereign.service" /etc/systemd/system/sovereign.service
 
 	systemctl daemon-reload
-	systemctl enable gosip gokil >/dev/null 2>&1
-	systemctl restart gosip gokil || true
-	verify_service gosip || die "Konfigurasi final gagal."
-	verify_service gokil || die "Konfigurasi final gagal."
+	systemctl enable sovereign >/dev/null 2>&1
+	systemctl restart sovereign || true
+	verify_service sovereign || die "Konfigurasi final gagal."
 }
 
 # ===============================================
