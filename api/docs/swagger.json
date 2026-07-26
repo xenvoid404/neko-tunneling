@@ -1,0 +1,240 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Selamat datang di dokumentasi Neko Tunneling API",
+        "title": "Neko Tunneling API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/vps/trial/ssh": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trial Akun"
+                ],
+                "summary": "Trial Akun Ssh",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Durasi Trial (Menit)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil membuat akun trial SSH",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/dto.SuccessRes"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.SSHData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Payload body tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/vps/trial/trojan": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trial Akun"
+                ],
+                "summary": "Trial Akun Trojan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Durasi Trial (Menit)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/vps/trial/vless": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trial Akun"
+                ],
+                "summary": "Trial Akun Vless",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Durasi Trial (Menit)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/vps/trial/vmess": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trial Akun"
+                ],
+                "summary": "Trial Akun Vmess",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Durasi Trial (Menit)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        }
+    },
+    "definitions": {
+        "dto.ErrorRes": {
+            "type": "object",
+            "properties": {
+                "errors": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.PayloadWSData": {
+            "type": "object",
+            "properties": {
+                "payloadcdn": {
+                    "type": "string"
+                },
+                "payloadwithpath": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PortData": {
+            "type": "object",
+            "properties": {
+                "none": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "udpgw": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.SSHData": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Jakarta"
+                },
+                "expired": {
+                    "type": "string",
+                    "example": "2006-01-02 15:04:05"
+                },
+                "hostname": {
+                    "type": "string",
+                    "example": "domain.com"
+                },
+                "isp": {
+                    "type": "string",
+                    "example": "Neko Tunneling ltd"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "neko123"
+                },
+                "payloadWS": {
+                    "$ref": "#/definitions/dto.PayloadWSData"
+                },
+                "port": {
+                    "$ref": "#/definitions/dto.PortData"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "neko123"
+                }
+            }
+        },
+        "dto.SuccessRes": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,157 @@
+basePath: /
+definitions:
+  dto.ErrorRes:
+    properties:
+      errors: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  dto.PayloadWSData:
+    properties:
+      payloadcdn:
+        type: string
+      payloadwithpath:
+        type: string
+    type: object
+  dto.PortData:
+    properties:
+      none:
+        items:
+          type: string
+        type: array
+      tls:
+        items:
+          type: string
+        type: array
+      udpgw:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.SSHData:
+    properties:
+      city:
+        example: Jakarta
+        type: string
+      expired:
+        example: "2006-01-02 15:04:05"
+        type: string
+      hostname:
+        example: domain.com
+        type: string
+      isp:
+        example: Neko Tunneling ltd
+        type: string
+      password:
+        example: neko123
+        type: string
+      payloadWS:
+        $ref: '#/definitions/dto.PayloadWSData'
+      port:
+        $ref: '#/definitions/dto.PortData'
+      username:
+        example: neko123
+        type: string
+    type: object
+  dto.SuccessRes:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: Selamat datang di dokumentasi Neko Tunneling API
+  title: Neko Tunneling API
+  version: "1.0"
+paths:
+  /vps/trial/ssh:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Durasi Trial (Menit)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil membuat akun trial SSH
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.SuccessRes'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.SSHData'
+              type: object
+        "400":
+          description: Bad Request - Payload body tidak valid
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "422":
+          description: Unprocessable Entity - Validasi form gagal
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "500":
+          description: Internal Server Error - Gagal eksekusi ke server
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+      summary: Trial Akun Ssh
+      tags:
+      - Trial Akun
+  /vps/trial/trojan:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Durasi Trial (Menit)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Trial Akun Trojan
+      tags:
+      - Trial Akun
+  /vps/trial/vless:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Durasi Trial (Menit)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Trial Akun Vless
+      tags:
+      - Trial Akun
+  /vps/trial/vmess:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Durasi Trial (Menit)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Trial Akun Vmess
+      tags:
+      - Trial Akun
+swagger: "2.0"
