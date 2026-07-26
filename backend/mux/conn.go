@@ -1,4 +1,4 @@
-package main
+package mux
 
 import (
 	"bufio"
@@ -33,7 +33,7 @@ func newPeekConn(conn net.Conn) *peekConn {
 }
 
 func (c *peekConn) peekPrefix() ([]byte, error) {
-	_ = c.Conn.SetReadDeadline(time.Now().Add(cfg.readTimeout))
+	_ = c.Conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	defer func() { _ = c.Conn.SetReadDeadline(time.Time{}) }()
 	return c.reader.Peek(4)
 }
@@ -107,7 +107,7 @@ func runPipes(c1, c2 net.Conn, mode string) {
 
 	wg.Wait()
 
-	log.Debug("Sesi tunnel selesai",
+	slog.Debug("Sesi tunnel selesai",
 		slog.String("metode", mode),
 		slog.Int64("bytes_terkirim", sent),
 		slog.Int64("bytes_diterima", received))

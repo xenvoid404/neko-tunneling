@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 
-	"github.com/xenvoid404/neko-tunneling/app/route"
+	"github.com/xenvoid404/neko-tunneling/api/route"
 	"github.com/xenvoid404/neko-tunneling/config"
 	"github.com/xenvoid404/neko-tunneling/database"
 	"github.com/xenvoid404/neko-tunneling/docs"

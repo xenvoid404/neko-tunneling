@@ -334,7 +334,7 @@ paths:
       - Trial Akun
 securityDefinitions:
   BearerAuth:
-    description: 'Masukkan token dengan format: Bearer {token_anda}'
+    description: 'Masukkan token dengan format: Bearer {token}'
     in: header
     name: Authorization
     type: apiKey

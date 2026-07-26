@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/xenvoid404/neko-tunneling/app/dto"
+	"github.com/xenvoid404/neko-tunneling/api/dto"
 )
 
 func AuthMiddleware(apiKey string) fiber.Handler {

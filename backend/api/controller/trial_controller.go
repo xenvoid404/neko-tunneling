@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/xenvoid404/neko-tunneling/app/dto"
-	"github.com/xenvoid404/neko-tunneling/app/service"
+	"github.com/xenvoid404/neko-tunneling/api/dto"
+	"github.com/xenvoid404/neko-tunneling/api/service"
 	"github.com/xenvoid404/neko-tunneling/config"
 	"github.com/xenvoid404/neko-tunneling/pkg/provision"
 	"github.com/xenvoid404/neko-tunneling/pkg/utils"

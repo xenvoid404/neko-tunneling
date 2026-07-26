@@ -1,4 +1,4 @@
-package main
+package mux
 
 import (
 	"bytes"
@@ -16,22 +16,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/xenvoid404/neko-tunneling/config"
 	"golang.org/x/net/http2"
 )
 
 type server struct {
+	cfg        *config.Config
 	tlsConfig  *tls.Config
 	httpServer *http.Server
-	routes     []route
+	routes     []*config.Route
 }
 
-func newServer() (*server, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.certFile, cfg.keyFile)
+func NewServer(cfg *config.Config) (*server, error) {
+	cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("gagal memuat sertifikat TLS: %w", err)
 	}
 
 	server := &server{
+		cfg: cfg,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			NextProtos:   []string{"http/1.1", "h2"},
@@ -40,103 +43,103 @@ func newServer() (*server, error) {
 
 	httpRT := &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout:   cfg.dialTimeout,
-			KeepAlive: cfg.keepAliveTimeout,
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
 		}).DialContext,
-		MaxIdleConns:        cfg.maxIdleConns,
-		MaxIdleConnsPerHost: cfg.maxIdleConnsPerHost,
-		IdleConnTimeout:     cfg.idleTimeout,
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 20,
+		IdleConnTimeout:     90 * time.Second,
 	}
 
 	grpcRT := &http2.Transport{
 		AllowHTTP: true,
 		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
 			return (&net.Dialer{
-				Timeout:   cfg.dialTimeout,
-				KeepAlive: cfg.keepAliveTimeout,
+				Timeout:   3 * time.Second,
+				KeepAlive: 30 * time.Second,
 			}).DialContext(ctx, network, addr)
 		},
 	}
 
-	for _, r := range cfg.routes {
+	for _, r := range cfg.Routes {
 		transport := http.RoundTripper(httpRT)
-		if r.isGRPC {
+		if r.IsGRPC {
 			transport = grpcRT
 		}
 
-		proxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: r.target})
+		proxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: r.Target})
 		proxy.FlushInterval = -1
 		proxy.Transport = transport
 		proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
-			log.Error("Gagal meneruskan request ke backend Xray",
-				slog.String("path", r.path),
-				slog.String("target", r.target),
+			slog.Error("Gagal meneruskan request ke backend Xray",
+				slog.String("path", r.Path),
+				slog.String("target", r.Target),
 				slog.String("remote_addr", req.RemoteAddr),
 				slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
-		server.routes = append(server.routes, route{
-			path:   r.path,
-			target: r.target,
-			proxy:  proxy,
-			isGRPC: r.isGRPC,
+		server.routes = append(server.routes, &config.Route{
+			Path:   r.Path,
+			Target: r.Target,
+			Proxy:  proxy,
+			IsGRPC: r.IsGRPC,
 		})
 	}
 
 	server.httpServer = &http.Server{
 		Handler:     server,
-		ReadTimeout: cfg.readTimeout,
+		ReadTimeout: 5 * time.Second,
 	}
 
-	log.Info("Multiplexer berhasil diinisialisasi",
+	slog.Info("Mux berhasil diinisialisasi",
 		slog.Int("jumlah_route", len(server.routes)),
-		slog.Int("jumlah_listener", len(cfg.listeners)))
+		slog.Int("jumlah_listener", len(cfg.Listeners)))
 
 	return server, nil
 }
 
-func (s *server) start(ctx context.Context) error {
+func (s *server) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 	var listeners []net.Listener
 
-	for _, spec := range cfg.listeners {
-		ln, err := net.Listen("tcp", spec.addr)
+	for _, spec := range s.cfg.Listeners {
+		ln, err := net.Listen("tcp", spec.Addr)
 		if err != nil {
-			return fmt.Errorf("%s gagal mendengarkan: %w", spec.addr, err)
+			return fmt.Errorf("%s gagal mendengarkan: %w", spec.Addr, err)
 		}
 
 		listeners = append(listeners, ln)
-		log.Info("Mendengarkan koneksi",
-			slog.String("addr", spec.addr),
-			slog.Bool("tls", spec.isTLS),
-			slog.String("ssh_backend", spec.sshBackend))
+		slog.Info("Mendengarkan koneksi",
+			slog.String("addr", spec.Addr),
+			slog.Bool("tls", spec.IsTLS),
+			slog.String("ssh_backend", spec.SSHBackend))
 
 		wg.Add(1)
-		go func(l net.Listener, sp listener) {
+		go func(l net.Listener, sp config.Listener) {
 			defer wg.Done()
 			s.acceptLoop(l, sp)
 		}(ln, spec)
 	}
 
 	<-ctx.Done()
-	log.Info("Menerima sinyal shutdown, menutup semua listener...")
+	slog.Info("Menerima sinyal shutdown, menutup semua listener...")
 	for _, ln := range listeners {
 		_ = ln.Close()
 	}
 
 	wg.Wait()
-	log.Info("Multiplexer berhenti dengan elegan")
+	slog.Info("Mux berhenti dengan elegan")
 	return nil
 }
 
-func (s *server) acceptLoop(ln net.Listener, spec listener) {
+func (s *server) acceptLoop(ln net.Listener, spec config.Listener) {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				log.Warn("Gagal menerima koneksi baru",
-					slog.String("addr", spec.addr),
+				slog.Warn("Gagal menerima koneksi baru",
+					slog.String("addr", spec.Addr),
 					slog.Any("error", err))
 				continue
 			}
@@ -147,13 +150,13 @@ func (s *server) acceptLoop(ln net.Listener, spec listener) {
 	}
 }
 
-func (s *server) processConnection(conn net.Conn, spec listener) {
-	targetSSH := cfg.dropbearAddr
-	if spec.sshBackend == "openssh" {
-		targetSSH = cfg.openSSHAddr
+func (s *server) processConnection(conn net.Conn, spec config.Listener) {
+	targetSSH := s.cfg.DropbearAddr
+	if spec.SSHBackend == "openssh" {
+		targetSSH = s.cfg.OpenSSHAddr
 	}
 
-	if !spec.isTLS {
+	if !spec.IsTLS {
 		s.sniffProtocol(conn, targetSSH, "SSH Direct (TCP Mentah)")
 		return
 	}
@@ -165,7 +168,7 @@ func (s *server) processConnection(conn net.Conn, spec listener) {
 	}
 
 	if isHTTP2 {
-		log.Debug("ALPN h2 terdeteksi, diarahkan langsung sebagai HTTP/2 (kemungkinan gRPC)",
+		slog.Debug("ALPN h2 terdeteksi, diarahkan langsung sebagai HTTP/2 (kemungkinan gRPC)",
 			slog.String("remote_addr", conn.RemoteAddr().String()))
 		s.routeToHTTPServer(tlsConn, targetSSH)
 		return
@@ -176,11 +179,11 @@ func (s *server) processConnection(conn net.Conn, spec listener) {
 
 func (s *server) performTLSHandshake(conn net.Conn) (*tls.Conn, bool, error) {
 	tlsConn := tls.Server(conn, s.tlsConfig)
-	_ = tlsConn.SetDeadline(time.Now().Add(cfg.readTimeout))
+	_ = tlsConn.SetDeadline(time.Now().Add(5 * time.Second))
 	err := tlsConn.Handshake()
 	_ = tlsConn.SetDeadline(time.Time{})
 	if err != nil {
-		log.Debug("Handshake TLS gagal",
+		slog.Debug("Handshake TLS gagal",
 			slog.String("remote_addr", conn.RemoteAddr().String()),
 			slog.Any("error", err))
 		return nil, false, err
@@ -196,7 +199,7 @@ func (s *server) sniffProtocol(conn net.Conn, targetSSH, mode string) {
 	pc := newPeekConn(conn)
 	peekedData, err := pc.peekPrefix()
 	if err != nil {
-		log.Debug("Menutup koneksi: gagal membaca byte pertama (idle/timeout)",
+		slog.Debug("Menutup koneksi: gagal membaca byte pertama (idle/timeout)",
 			slog.String("remote_addr", conn.RemoteAddr().String()),
 			slog.Any("error", err))
 		_ = conn.Close()
@@ -216,7 +219,7 @@ func (s *server) routeToHTTPServer(clientConn net.Conn, targetSSH string) {
 	dummyListener := &singleConnListener{conn: mc}
 	err := s.httpServer.Serve(dummyListener)
 	if err != nil && err != http.ErrServerClosed {
-		log.Error("HTTP server berhenti dengan error", slog.Any("error", err))
+		slog.Error("HTTP server berhenti dengan error", slog.Any("error", err))
 	}
 }
 
@@ -227,12 +230,12 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, r := range s.routes {
-		if strings.HasPrefix(req.URL.Path, r.path) {
-			log.Debug("Menyalurkan lalu lintas Xray",
+		if strings.HasPrefix(req.URL.Path, r.Path) {
+			slog.Debug("Menyalurkan lalu lintas Xray",
 				slog.String("path", req.URL.Path),
-				slog.String("target", r.target),
+				slog.String("target", r.Target),
 				slog.String("remote_addr", req.RemoteAddr))
-			r.proxy.ServeHTTP(w, req)
+			r.Proxy.ServeHTTP(w, req)
 			return
 		}
 	}
@@ -242,16 +245,16 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Debug("Request tidak cocok route manapun, default ke Dropbear (HTTP Payload)",
+	slog.Debug("Request tidak cocok route manapun, default ke Dropbear (HTTP Payload)",
 		slog.String("path", req.URL.Path),
 		slog.String("remote_addr", req.RemoteAddr))
 	s.hijackAndBridge(w, "HTTP/1.1 200 OK\r\n\r\n", "HTTP Payload (Default)")
 }
 
 func (s *server) bridgeConnection(clientConn net.Conn, backendAddr, mode string) {
-	backendConn, err := net.DialTimeout("tcp", backendAddr, cfg.dialTimeout)
+	backendConn, err := net.DialTimeout("tcp", backendAddr, 3*time.Second)
 	if err != nil {
-		log.Error("Gagal terhubung ke backend SSH",
+		slog.Error("Gagal terhubung ke backend SSH",
 			slog.String("metode", mode),
 			slog.String("target", backendAddr),
 			slog.Any("error", err))
@@ -259,7 +262,7 @@ func (s *server) bridgeConnection(clientConn net.Conn, backendAddr, mode string)
 		return
 	}
 
-	log.Info("Menyalurkan koneksi SSH",
+	slog.Info("Menyalurkan koneksi SSH",
 		slog.String("metode", mode),
 		slog.String("remote_addr", clientConn.RemoteAddr().String()),
 		slog.String("target", backendAddr))
@@ -276,20 +279,20 @@ func (s *server) hijackAndBridge(w http.ResponseWriter, initialResponse, mode st
 
 	clientConn, rw, err := hj.Hijack()
 	if err != nil {
-		log.Error("Hijack koneksi gagal",
+		slog.Error("Hijack koneksi gagal",
 			slog.String("metode", mode),
 			slog.Any("error", err))
 		return
 	}
 
-	targetSSH := cfg.dropbearAddr
+	targetSSH := s.cfg.DropbearAddr
 	if mc, ok := clientConn.(*muxConn); ok {
 		targetSSH = mc.targetSSH
 	}
 
-	backendConn, err := net.DialTimeout("tcp", targetSSH, cfg.dialTimeout)
+	backendConn, err := net.DialTimeout("tcp", targetSSH, 3*time.Second)
 	if err != nil {
-		log.Error("Gagal terhubung ke backend SSH dari hijack",
+		slog.Error("Gagal terhubung ke backend SSH dari hijack",
 			slog.String("metode", mode),
 			slog.String("target", targetSSH),
 			slog.Any("error", err))
@@ -299,7 +302,7 @@ func (s *server) hijackAndBridge(w http.ResponseWriter, initialResponse, mode st
 
 	if initialResponse != "" {
 		if _, err := rw.WriteString(initialResponse); err != nil {
-			log.Error("Gagal mengirim respons awal ke klien",
+			slog.Error("Gagal mengirim respons awal ke klien",
 				slog.String("metode", mode),
 				slog.Any("error", err))
 			_ = clientConn.Close()
@@ -307,7 +310,7 @@ func (s *server) hijackAndBridge(w http.ResponseWriter, initialResponse, mode st
 			return
 		}
 		if err := rw.Flush(); err != nil {
-			log.Error("Gagal flush respons awal ke klien",
+			slog.Error("Gagal flush respons awal ke klien",
 				slog.String("metode", mode),
 				slog.Any("error", err))
 			_ = clientConn.Close()
@@ -318,7 +321,7 @@ func (s *server) hijackAndBridge(w http.ResponseWriter, initialResponse, mode st
 
 	if n := rw.Reader.Buffered(); n > 0 {
 		if _, err := io.CopyN(backendConn, rw.Reader, int64(n)); err != nil {
-			log.Error("Gagal menguras buffer awal klien",
+			slog.Error("Gagal menguras buffer awal klien",
 				slog.String("metode", mode),
 				slog.Any("error", err))
 			_ = clientConn.Close()
@@ -327,7 +330,7 @@ func (s *server) hijackAndBridge(w http.ResponseWriter, initialResponse, mode st
 		}
 	}
 
-	log.Info("Menyalurkan koneksi SSH",
+	slog.Info("Menyalurkan koneksi SSH",
 		slog.String("metode", mode),
 		slog.String("remote_addr", clientConn.RemoteAddr().String()),
 		slog.String("target", targetSSH))

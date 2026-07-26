@@ -4,8 +4,8 @@ import (
 	"github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/xenvoid404/neko-tunneling/app/controller"
-	"github.com/xenvoid404/neko-tunneling/app/middleware"
+	"github.com/xenvoid404/neko-tunneling/api/controller"
+	"github.com/xenvoid404/neko-tunneling/api/middleware"
 	"github.com/xenvoid404/neko-tunneling/config"
 )
 
