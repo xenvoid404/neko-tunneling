@@ -65,6 +65,25 @@ status_service() {
 	fi
 }
 
+get_ip_info() {
+	local file="$1"
+	local field="$2"
+	mkdir -p "$CACHE_DIR"
+	ensure_pkg curl jq
+
+	if [[ ! -s "$file" ]]; then
+		local response
+		response=$(curl -fsS --max-time 5 http://ip-api.com/json/) || return 1
+		echo "$response" | jq -r ".$field" >"$file"
+	fi
+
+	cat "$file" 2>/dev/null || echo "Unknown"
+}
+readonly DOMAIN_INFO="$(cat "$CACHE_DOMAIN" 2>/dev/null || echo "Unknown")"
+readonly IP_INFO="$(get_ip_info "$CACHE_IP" query)"
+readonly CITY_INFO="$(get_ip_info "$CACHE_CITY" city)"
+readonly ISP_INFO="$(get_ip_info "$CACHE_ISP" isp)"
+
 # ===============================================
 # Menu SSH
 # ===============================================
@@ -358,6 +377,75 @@ features_check_bandwidth() {
 	done
 }
 
+features_change_domain() {
+	while true; do
+		clear
+		echo -e ""
+		echo -e "${TL}${HL}${TR}"
+		echo -e "${VL}${HEADER}                   UBAH DOMAIN                   ${NC}"
+		echo -e "${BL}${HL}${BR}"
+		echo -e "${VL} DOMAIN SAAT INI : ${ORANGE1}${DOMAIN_INFO}${NC}"
+		echo -e "${VL} IP VPS          : ${ORANGE1}${IP_INFO}${NC}"
+		echo -e "${BL}${HL}${NC}"
+		echo -e ""
+
+		read -r -p " Masukkan Domain Baru : " new_domain
+		if [[ -z "$new_domain" ]]; then
+			break
+		fi
+
+		echo -e ""
+		echo -e "${YELLOW} Memverifikasi domain...${NC}"
+		local resolved_ip=$(getent ahosts "$new_domain" | awk '{ print $1 }' | head -1)
+		if [[ "$resolved_ip" != "$IP_INFO" ]]; then
+			echo -e ""
+			echo -e "  DOMAIN        : ${RED}${new_domain}${NC}"
+			echo -e "  IP VPS        : ${ORANGE1}${IP_INFO}${NC}"
+			echo -e "  IP Terdeteksi : ${ORANGE1}${resolved_ip:-Tidak ada/belum propagasi}${NC}"
+			echo -e ""
+			echo -e "${RED} [!] Validasi Gagal: A Record domain tidak cocok dengan IP VPS.${NC}"
+			echo -e "${YELLOW} [!] Pastikan domain sudah dipointing ke IP VPS.${NC}"
+			echo -e ""
+			echo -e ""
+			read -r -p "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+			break
+		fi
+
+		systemctl stop gosip 2>/dev/null
+
+		if [[ ! -f "/root/.acme.sh/acme.sh" ]]; then
+			local acme_email="admin@${new_domain}"
+			curl -s https://get.acme.sh | sh -s email="$acme_email" >/dev/null 2>&1
+			/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt >/dev/null 2>&1
+		fi
+
+		echo -e " Mengubah ke ${BLUE1}${new_domain}${NC}..."
+		if /root/.acme.sh/acme.sh --issue -d "$new_domain" --standalone --keylength ec-256 --force; then
+			local cert_dir="/etc/nekotun/certs"
+			mkdir -p "$cert_dir"
+			/root/.acme.sh/acme.sh --install-cert -d "$new_domain" --ecc \
+				--fullchain-file "${cert_dir}/fullchain.cer" \
+				--key-file "${cert_dir}/private.key"
+
+			echo -e ""
+			echo -e "${GREEN} Berhasil mengubah domain${NC}"
+			echo -e "  Dari : ${ORANGE1}${DOMAIN_INFO}${NC}"
+			echo -e "  Ke   : ${GREEN}${new_domain}${NC}"
+			echo "$new_domain" >"$CACHE_DOMAIN"
+		else
+			echo -e ""
+			echo -e "${RED} Gagal mengubah domain${NC}"
+		fi
+
+		systemctl restart gosip 2>/dev/null
+
+		echo -e ""
+		echo -e ""
+		read -r -p "${WHITE} Tekan [Enter] untuk kembali...${NC}"
+		break
+	done
+}
+
 features_change_banner() {
 	local banner_file="/etc/banner.why"
 	local tmp_file="/etc/banner.why.tmp"
@@ -403,6 +491,7 @@ features_menu() {
 		read -r -p " Pilih Menu [1-8 atau x] : " features_menu_opt
 		case "$features_menu_opt" in
 		1) features_check_bandwidth ;;
+		6) features_change_domain ;;
 		7) features_change_banner ;;
 		8) break ;;
 		x | X)
@@ -433,24 +522,6 @@ get_os_name() {
 	fi
 }
 readonly OS_NAME="$(get_os_name)"
-
-get_ip_info() {
-	local file="$1"
-	local field="$2"
-	mkdir -p "$CACHE_DIR"
-	ensure_pkg curl jq
-
-	if [[ ! -s "$file" ]]; then
-		local response
-		response=$(curl -fsS --max-time 5 http://ip-api.com/json/) || return 1
-		echo "$response" | jq -r ".$field" >"$file"
-	fi
-
-	cat "$file" 2>/dev/null || echo "Unknown"
-}
-readonly IP_INFO="$(get_ip_info "$CACHE_IP" query)"
-readonly CITY_INFO="$(get_ip_info "$CACHE_CITY" city)"
-readonly ISP_INFO="$(get_ip_info "$CACHE_ISP" isp)"
 
 get_vnstat_info() {
 	ensure_pkg vnstat jq
