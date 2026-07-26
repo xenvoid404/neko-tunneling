@@ -358,6 +358,25 @@ features_check_bandwidth() {
 	done
 }
 
+features_change_banner() {
+	local banner_file="/etc/banner.why"
+	local tmp_file="/etc/banner.why.tmp"
+
+	nano "$tmp_file"
+
+	if [[ -f "$tmp_file" ]]; then
+		mv "$tmp_file" "$banner_file"
+		systemctl restart ssh sshd dropbear 2>/dev/null
+
+		echo -e ""
+		echo -e "${GREEN} Banner berhasil diperbarui${NC}"
+	else
+		echo -e ""
+		echo -e "${RED} Perubahan banner dibatalkan${NC}"
+	fi
+	sleep 2
+}
+
 features_menu() {
 	while true; do
 		clear
@@ -384,6 +403,7 @@ features_menu() {
 		read -r -p " Pilih Menu [1-8 atau x] : " features_menu_opt
 		case "$features_menu_opt" in
 		1) features_check_bandwidth ;;
+		7) features_change_banner ;;
 		8) break ;;
 		x | X)
 			echo -e ""
