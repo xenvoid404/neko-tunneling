@@ -5,7 +5,7 @@ After=network.target nss-lookup.target
 
 [Service]
 User=root
-Group=root
+Environment=/etc/nekotun/.env
 ExecStart=/usr/local/bin/gokil
 Restart=on-failure
 

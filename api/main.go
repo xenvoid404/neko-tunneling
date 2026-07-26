@@ -8,11 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
 
+	"github.com/xenvoid404/neko-tunneling/app/route"
 	"github.com/xenvoid404/neko-tunneling/config"
-	"github.com/xenvoid404/neko-tunneling/controller"
 	"github.com/xenvoid404/neko-tunneling/database"
 	"github.com/xenvoid404/neko-tunneling/docs"
 	"github.com/xenvoid404/neko-tunneling/pkg/logger"
@@ -32,7 +31,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	dbCtx, cancelDB := context.WithTimeout(ctx, cfg.DBTimeout)
+	dbCtx, cancelDB := context.WithTimeout(ctx, 10*time.Second)
 	defer cancelDB()
 
 	if err := database.Connect(dbCtx, cfg); err != nil {
@@ -40,13 +39,7 @@ func main() {
 			slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer func() {
-		log.Info("Menutup koneksi database")
-		if err := database.DB.Close(); err != nil {
-			log.Error("Gagal menutup koneksi database",
-				slog.Any("error", err))
-		}
-	}()
+	defer database.Close()
 
 	if err := provision.InitXrayClient(cfg.XrayAPIAddr); err != nil {
 		log.Error("Gagal inisiasi klien Xray API, aplikasi terhenti",
@@ -63,18 +56,14 @@ func main() {
 
 	docs.SwaggerInfo.Host = resolveSwaggerHost(cfg)
 
-	app := fiber.New(fiber.Config{AppName: "Neko Tunneling API"})
+	app := fiber.New(fiber.Config{AppName: cfg.AppName})
 	app.Use(recover.New())
-	app.Get("/vps/docs/*", swaggo.HandlerDefault)
-	app.Post("/vps/trial/ssh", controller.TrialSSH(cfg))
-	app.Post("/vps/trial/vmess", controller.TrialVmess(cfg))
-	app.Post("/vps/trial/vless", controller.TrialVless(cfg))
-	app.Post("/vps/trial/trojan", controller.TrialTrojan(cfg))
+	route.Setup(app, cfg)
 
 	log.Info("Memulai layanan Fiber...")
 
 	go func() {
-		if err := app.Listen(cfg.ListenAddr); err != nil {
+		if err := app.Listen(cfg.AppAddr); err != nil {
 			log.Error("Fiber terhenti karena error",
 				slog.Any("error", err))
 			stop()
@@ -93,18 +82,18 @@ func main() {
 }
 
 func resolveSwaggerHost(cfg *config.Config) string {
-	if domain := utils.ReadFile(cfg.CacheDir + "/domain"); domain != "" {
+	if domain := utils.ReadFile(cfg.CacheDomainPath); domain != "" {
 		log.Info("Swagger Host dikonfigurasi menggunakan Domain",
 			slog.String("domain", domain))
 		return domain
 	}
-	if ip := utils.ReadFile(cfg.CacheDir + "/ip"); ip != "" {
+	if ip := utils.ReadFile(cfg.CacheIPPath); ip != "" {
 		log.Info("Swagger Host dikonfigurasi menggunakan IP",
 			slog.String("ip", ip))
 		return ip
 	}
 
 	log.Warn("File domain/IP tidak ditemukan, menggunakan fallback",
-		slog.String("fallback", cfg.ListenAddr))
-	return cfg.ListenAddr
+		slog.String("fallback", cfg.AppAddr))
+	return cfg.AppAddr
 }

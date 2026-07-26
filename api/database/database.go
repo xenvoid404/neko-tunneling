@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/xenvoid404/neko-tunneling/config"
@@ -12,19 +13,18 @@ import (
 )
 
 var log = logger.CreateLogger()
-var cfg = config.GetConfig()
 var DB *sql.DB
 
-func Connect(ctx context.Context) error {
+func Connect(ctx context.Context, cfg *config.Config) error {
 	dsn := fmt.Sprintf("file:%s?_fk=1&_journal_mode=WAL&_synchronous=NORMAL&_temp_store=MEMORY", cfg.DBPath)
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return fmt.Errorf("gagal membuka database: %w", err)
 	}
 
-	db.SetMaxOpenConns(cfg.DBMaxConn)
-	db.SetMaxIdleConns(cfg.DBMaxIdleConn)
-	db.SetConnMaxIdleTime(cfg.DBMaxIdleTime)
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err := db.PingContext(ctx); err != nil {
 		return fmt.Errorf("database tidak merespon: %w", err)
@@ -35,9 +35,21 @@ func Connect(ctx context.Context) error {
 	}
 
 	DB = db
-	log.Info("Inisiasi database SQLite3 berhasil",
+	log.Info("Inisiasi database berhasil",
 		slog.String("path", cfg.DBPath))
 	return nil
+}
+
+func Close() error {
+	if DB != nil {
+		log.Info("Menutup koneksi database...")
+		if err := DB.Close(); err != nil {
+			log.Error("Gagal menutup koneksi database",
+				slog.Any("error", err))
+			return
+		}
+		log.Info("Koneksi database berhasil ditutup")
+	}
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {
@@ -65,6 +77,6 @@ func migrate(ctx context.Context, db *sql.DB) error {
 		return fmt.Errorf("gagal memuat tabel database: %w", err)
 	}
 
-	log.Info("Migrasi tabel SQLite3 berhasil")
+	log.Info("Migrasi tabel database berhasil")
 	return nil
 }
