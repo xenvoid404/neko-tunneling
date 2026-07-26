@@ -2,24 +2,23 @@ package controller
 
 import (
 	"log/slog"
-	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/xenvoid404/neko-tunneling/dto"
-	"github.com/xenvoid404/neko-tunneling/pkg/logger"
+
+	"github.com/xenvoid404/neko-tunneling/app/dto"
+	"github.com/xenvoid404/neko-tunneling/app/service"
+	"github.com/xenvoid404/neko-tunneling/config"
+	"github.com/xenvoid404/neko-tunneling/pkg/provision"
 	"github.com/xenvoid404/neko-tunneling/pkg/utils"
 	"github.com/xenvoid404/neko-tunneling/pkg/validator"
-	"github.com/xenvoid404/neko-tunneling/repository"
 )
 
-var log = logger.CreateLogger()
-
-func handleTrial(protocol string) fiber.Handler {
+func handleTrial(cfg *config.Config, protocol string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		validProtocols := map[string]bool{"ssh": true, "vmess": true, "vless": true, "trojan": true}
 		if !validProtocols[protocol] {
 			return c.Status(fiber.StatusUnprocessableEntity).JSON(&dto.ErrorRes{
-				Syccess: false,
+				Success: false,
 				Message: "no",
 				Errors: fiber.Map{
 					"protocol": []string{"protocol tidak valid"},
@@ -28,7 +27,6 @@ func handleTrial(protocol string) fiber.Handler {
 		}
 
 		var req dto.TrialReq
-
 		if err := c.Bind().Body(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(&dto.ErrorRes{
 				Success: false,
@@ -44,188 +42,134 @@ func handleTrial(protocol string) fiber.Handler {
 			})
 		}
 
-		username := utils.RandomUsername()
-		password := utils.RandomPassword(protocol)
-		expiredAt := time.Now().Add(time.Duration(req.Expired) * time.Minute)
-
-		if protocol == "ssh" {
-			if err := utils.AddSSHUser(username, password, expiredAt); err != nil {
-				log.Error("Gagal membuat user Linux",
-					slog.String("username", username),
-					slog.Any("error", err))
-				return c.Status(fiber.StatusInternalServerError).JSON(&dto.ErrorRes{
-					Success: false,
-					Message: "pembuatan akun gagal",
-				})
-			}
-		} else {
-			if err := utils.AddXrayUser(cfg.XrayAPIAddr, protocol, password, username); err != nil {
-				log.Error("Gagal membuat user Xray",
-					slog.String("protocol", protocol),
-					slog.String("username", username),
-					slog.Any("error", err))
-				return c.Status(fiber.StatusInternalServerError).JSON(&dto.ErrorRes{
-					Success: false,
-					Message: "pembuatan akun gagal",
-				})
-			}
-		}
-
-		user := repository.User{
-			Protocol:   protocol,
-			Username:   username,
-			Password:   password,
-			LimitIP:    0,
-			LimitQuota: 0,
-			Status:     "active",
-			ExpiredAt:  expiredAt.Format("2006-01-02 15:04:05"),
-		}
-
-		if err := repository.CreateUser(c.Context(), user); err != nil {
-			log.Error("Gagal menyimpan ke database",
+		account, err := service.CreateTrial(c.Context(), cfg, protocol, req.Expired)
+		if err != nil {
+			slog.Error("Gagal membuat akun trial",
+				slog.String("protocol", protocol),
 				slog.Any("error", err))
-			if protocol == "ssh" {
-				if delErr := utils.DeleteSSHUser(username); delErr != nil {
-					log.Error("Gagal rollback user SSH",
-						slog.Any("error", delErr))
-				}
-			}
-
 			return c.Status(fiber.StatusInternalServerError).JSON(&dto.ErrorRes{
 				Success: false,
-				Message: "Pembuatan akun gagal",
+				Message: "pembuatan akun gagal",
 			})
 		}
 
-		hostname := sysutil.ReadFile("/var/lib/nekotun/cache/domain")
-		isp := sysutil.ReadFile("/var/lib/nekotun/cache/isp")
-		city := sysutil.ReadFile("/var/lib/nekotun/cache/city")
+		hostname := utils.ReadFile(cfg.CacheDomainPath)
+		isp := utils.ReadFile(cfg.CacheISPPath)
+		city := utils.ReadFile(cfg.CacheCityPath)
+		expiredStr := account.ExpiredAt.Format("2006-01-02 15:04:05")
 
-		switch protocol {
-		case "ssh":
-			return c.Status(fiber.StatusOK).JSON(&dto.SuccessRes{
-				Success: true,
-				Message: "ok",
-				Data: dto.SSHData{
-					Hostname: hostname,
-					ISP:      isp,
-					City:     city,
-					Username: username,
-					Password: password,
-					Expired:  expiredAt.Format("2006-01-02 15:04:05"),
-					Port: dto.PortData{
-						None:  []string{"80", "8080"},
-						TLS:   []string{"443", "444", "8443"},
-						UDPGW: []string{"7100", "7200", "7300", "7400", "7500", "7600"},
-					},
-					PayloadWS: dto.PayloadWSData{
-						PayloadCDN:      "GET / HTTP/1.1[crlf]Host: [host_port][crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
-						PayloadWithPath: "GET /worryfree/ssh HTTP/1.1[crlf]Host: BUG[crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
-					},
-				},
-			})
-		case "vmess":
-			return c.Status(fiber.StatusOK).JSON(&dto.SuccessRes{
-				Success: true,
-				Message: "ok",
-				Data: dto.VmessData{
-					Hostname: hostname,
-					ISP:      isp,
-					City:     city,
-					Username: username,
-					Password: password,
-					Expired:  expiredAt.Format("2006-01-02 15:04:05"),
-					Port: dto.PortData{
-						None: []string{"80"},
-						TLS:  []string{"443"},
-					},
-					Path: dto.PathData{
-						WS:      "vmess-ws",
-						Upgrade: "vmess-up",
-						GRPC:    "vmess-grpc",
-					},
-					Link: dto.XrayLinkData{
-						None:   utils.GenerateVMess(username, hostname, 80, password, "ws", "vmess-ws", false),
-						TLS:    utils.GenerateVMess(username, hostname, 443, password, "ws", "vmess-ws", true),
-						GRPC:   utils.GenerateVMess(username, hostname, 443, password, "grpc", "vmess-grpc", true),
-						UpNone: utils.GenerateVMess(username, hostname, 80, password, "httpupgrade", "vmess-up", false),
-						UpTLS:  utils.GenerateVMess(username, hostname, 443, password, "httpupgrade", "vmess-up", true),
-					},
-				},
-			})
-		case "vless":
-			return c.Status(fiber.StatusOK).JSON(&dto.SuccessRes{
-				Success: true,
-				Message: "ok",
-				Data: dto.VlessData{
-					Hostname: hostname,
-					ISP:      isp,
-					City:     city,
-					Username: username,
-					Password: password,
-					Expired:  expiredAt.Format("2006-01-02 15:04:05"),
-					Port: dto.PortData{
-						None: []string{"80"},
-						TLS:  []string{"443"},
-					},
-					Path: dto.PathData{
-						WS:      "vless-ws",
-						Upgrade: "vless-up",
-						GRPC:    "vless-grpc",
-					},
-					Link: dto.XrayLinkData{
-						None:   utils.GenerateVless(username, hostname, 80, password, "ws", "vless-ws", false),
-						TLS:    utils.GenerateVless(username, hostname, 443, password, "ws", "vless-ws", true),
-						GRPC:   utils.GenerateVless(username, hostname, 443, password, "grpc", "vless-grpc", true),
-						UpNone: utils.GenerateVless(username, hostname, 80, password, "httpupgrade", "vless-up", false),
-						UpTLS:  utils.GenerateVless(username, hostname, 443, password, "httpupgrade", "vless-up", true),
-					},
-				},
-			})
-		case "trojan":
-			return c.Status(fiber.StatusOK).JSON(&dto.SuccessRes{
-				Success: true,
-				Message: "ok",
-				Data: dto.TrojanData{
-					Hostname: hostname,
-					ISP:      isp,
-					City:     city,
-					Username: username,
-					Password: password,
-					Expired:  expiredAt.Format("2006-01-02 15:04:05"),
-					Port: dto.PortData{
-						TLS: []string{"443"},
-					},
-					Path: dto.PathData{
-						WS:      "vless-ws",
-						Upgrade: "vless-up",
-						GRPC:    "vless-grpc",
-					},
-					Link: dto.XrayLinkData{
-						TLS:    utils.GenerateVless(username, hostname, 443, password, "ws", "vless-ws", true),
-						GRPC:   utils.GenerateVless(username, hostname, 443, password, "grpc", "vless-grpc", true),
-						UpNone: utils.GenerateVless(username, hostname, 80, password, "httpupgrade", "vless-up", false),
-						UpTLS:  utils.GenerateVless(username, hostname, 443, password, "httpupgrade", "vless-up", true),
-					},
-				},
-			})
+		return c.Status(fiber.StatusOK).JSON(&dto.SuccessRes{
+			Success: true,
+			Message: "ok",
+			Data:    buildTrialRes(protocol, hostname, isp, city, account.Username, account.Password, expiredStr),
+		})
+	}
+}
+
+func buildTrialRes(protocol, hostname, isp, city, username, password, expired string) interface{} {
+	switch protocol {
+	case "ssh":
+		return dto.SSHData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: username,
+			Password: password,
+			Expired:  expired,
+			Port: dto.PortData{
+				None:  []string{"80", "8080"},
+				TLS:   []string{"443", "444", "8443"},
+				UDPGW: []string{"7100", "7200", "7300", "7400", "7500", "7600"},
+			},
+			PayloadWS: dto.PayloadWSData{
+				PayloadCDN:      "GET / HTTP/1.1[crlf]Host: [host_port][crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
+				PayloadWithPath: "GET /worryfree/ssh HTTP/1.1[crlf]Host: BUG[crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
+			},
 		}
+	case "vmess":
+		return dto.VmessData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: username,
+			Password: password,
+			Expired:  expired,
+			Port:     dto.PortData{None: []string{"80"}, TLS: []string{"443"}},
+			Path:     dto.PathData{WS: "vmess-ws", Upgrade: "vmess-up", GRPC: "vmess-grpc"},
+			Link:     buildTrialXrayLink("vmess", username, hostname, password, "vmess-ws", "vmess-up", "vmess-grpc"),
+		}
+	case "vless":
+		return dto.VlessData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: username,
+			Password: password,
+			Expired:  expired,
+			Port:     dto.PortData{None: []string{"80"}, TLS: []string{"443"}},
+			Path:     dto.PathData{WS: "vless-ws", Upgrade: "vless-up", GRPC: "vless-grpc"},
+			Link:     buildTrialXrayLink("vless", username, hostname, password, "vless-ws", "vless-up", "vless-grpc"),
+		}
+	case "trojan":
+		return dto.TrojanData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: username,
+			Password: password,
+			Expired:  expired,
+			Port:     dto.PortData{TLS: []string{"443"}},
+			Path:     dto.PathData{WS: "trojan-ws", Upgrade: "trojan-up", GRPC: "trojan-grpc"},
+			Link:     buildTrialXrayLink("trojan", username, hostname, password, "trojan-ws", "trojan-up", "trojan-grpc"),
+		}
+	default:
+		return nil
+	}
+}
+
+func buildTrialXrayLink(protocol, username, hostname, secret, wsPath, upPath, grpcPath string) dto.XrayLinkData {
+	switch protocol {
+	case "vmess":
+		none, _ := provision.GenerateVmess(username, hostname, 80, secret, "ws", wsPath, false)
+		tls, _ := provision.GenerateVmess(username, hostname, 443, secret, "ws", wsPath, true)
+		grpc, _ := provision.GenerateVmess(username, hostname, 443, secret, "grpc", grpcPath, true)
+		upNone, _ := provision.GenerateVmess(username, hostname, 80, secret, "httpupgrade", upPath, false)
+		upTLS, _ := provision.GenerateVmess(username, hostname, 443, secret, "httpupgrade", upPath, true)
+		return dto.XrayLinkData{None: none, TLS: tls, GRPC: grpc, UpNone: upNone, UpTLS: upTLS}
+	case "vless":
+		return dto.XrayLinkData{
+			None:   provision.GenerateVless(username, hostname, 80, secret, "ws", wsPath, false),
+			TLS:    provision.GenerateVless(username, hostname, 443, secret, "ws", wsPath, true),
+			GRPC:   provision.GenerateVless(username, hostname, 443, secret, "grpc", grpcPath, true),
+			UpNone: provision.GenerateVless(username, hostname, 80, secret, "httpupgrade", upPath, false),
+			UpTLS:  provision.GenerateVless(username, hostname, 443, secret, "httpupgrade", upPath, true),
+		}
+	case "trojan":
+		return dto.XrayLinkData{
+			TLS:    provision.GenerateTrojan(username, hostname, 443, secret, "ws", wsPath, true),
+			GRPC:   provision.GenerateTrojan(username, hostname, 443, secret, "grpc", grpcPath, true),
+			UpNone: provision.GenerateTrojan(username, hostname, 80, secret, "httpupgrade", upPath, false),
+			UpTLS:  provision.GenerateTrojan(username, hostname, 443, secret, "httpupgrade", upPath, true),
+		}
+	default:
+		return dto.XrayLinkData{}
 	}
 }
 
 // TrialSSH godoc
-// @Summary   Trial Akun Ssh
+// @Summary   Trial Akun SSH
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit)"
+// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
 // @Success   200 {object} dto.SuccessRes{data=dto.SSHData} "Berhasil membuat akun trial SSH"
 // @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
 // @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
 // @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Security  BearerAuth
 // @Router    /vps/trial/ssh [post]
-func TrialSSH() fiber.Handler {
-	return handleTrial("ssh")
+func TrialSSH(cfg *config.Config) fiber.Handler {
+	return handleTrial(cfg, "ssh")
 }
 
 // TrialVmess godoc
@@ -233,10 +177,15 @@ func TrialSSH() fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit)"
+// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
+// @Success   200 {object} dto.SuccessRes{data=dto.VmessData} "Berhasil membuat akun trial Vmess"
+// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Security  BearerAuth
 // @Router    /vps/trial/vmess [post]
-func TrialVmess() fiber.Handler {
-	return handleTrial("vmess")
+func TrialVmess(cfg *config.Config) fiber.Handler {
+	return handleTrial(cfg, "vmess")
 }
 
 // TrialVless godoc
@@ -244,10 +193,15 @@ func TrialVmess() fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit)"
+// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
+// @Success   200 {object} dto.SuccessRes{data=dto.VlessData} "Berhasil membuat akun trial Vless"
+// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Security  BearerAuth
 // @Router    /vps/trial/vless [post]
-func TrialVless() fiber.Handler {
-	return handleTrial("vless")
+func TrialVless(cfg *config.Config) fiber.Handler {
+	return handleTrial(cfg, "vless")
 }
 
 // TrialTrojan godoc
@@ -255,8 +209,13 @@ func TrialVless() fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit)"
+// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
+// @Success   200 {object} dto.SuccessRes{data=dto.TrojanData} "Berhasil membuat akun trial Trojan"
+// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Security  BearerAuth
 // @Router    /vps/trial/trojan [post]
-func TrialTrojan() fiber.Handler {
-	return handleTrial("trojan")
+func TrialTrojan(cfg *config.Config) fiber.Handler {
+	return handleTrial(cfg, "trojan")
 }

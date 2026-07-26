@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 
 	"github.com/xenvoid404/neko-tunneling/app/route"
 	"github.com/xenvoid404/neko-tunneling/config"
@@ -19,14 +20,17 @@ import (
 	"github.com/xenvoid404/neko-tunneling/pkg/utils"
 )
 
-var log = logger.CreateLogger()
-
 // @Version     1.0
 // @BasePath    /
 // @Title       Neko Tunneling API
 // @Description Selamat datang di dokumentasi Neko Tunneling API
+// @SecurityDefinitions.apikey BearerAuth
+// @In header
+// @Name Authorization
+// @Description Masukkan token dengan format: Bearer {token_anda}
 func main() {
 	cfg := config.GetConfig()
+	logger.CreateLogger(cfg)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -35,21 +39,21 @@ func main() {
 	defer cancelDB()
 
 	if err := database.Connect(dbCtx, cfg); err != nil {
-		log.Error("Gagal inisiasi database, aplikasi terhenti",
+		slog.Error("Gagal inisiasi database, aplikasi terhenti",
 			slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer database.Close()
 
 	if err := provision.InitXrayClient(cfg.XrayAPIAddr); err != nil {
-		log.Error("Gagal inisiasi klien Xray API, aplikasi terhenti",
+		slog.Error("Gagal inisiasi klien Xray API, aplikasi terhenti",
 			slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer func() {
-		log.Info("Menutup koneksi Xray API")
+		slog.Info("Menutup koneksi Xray API")
 		if err := provision.CloseXrayClient(); err != nil {
-			log.Error("Gagal menutup koneksi Xray API",
+			slog.Error("Gagal menutup koneksi Xray API",
 				slog.Any("error", err))
 		}
 	}()
@@ -60,40 +64,40 @@ func main() {
 	app.Use(recover.New())
 	route.Setup(app, cfg)
 
-	log.Info("Memulai layanan Fiber...")
+	slog.Info("Memulai layanan Fiber...")
 
 	go func() {
 		if err := app.Listen(cfg.AppAddr); err != nil {
-			log.Error("Fiber terhenti karena error",
+			slog.Error("Fiber terhenti karena error",
 				slog.Any("error", err))
 			stop()
 		}
 	}()
 
 	<-ctx.Done()
-	log.Info("Menerima sinyal shutdown, mematikan Fiber...")
+	slog.Info("Menerima sinyal shutdown, mematikan Fiber...")
 
 	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelShutdown()
 	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
-		log.Error("Gagal graceful shutdown Fiber",
+		slog.Error("Gagal graceful shutdown Fiber",
 			slog.Any("error", err))
 	}
 }
 
 func resolveSwaggerHost(cfg *config.Config) string {
 	if domain := utils.ReadFile(cfg.CacheDomainPath); domain != "" {
-		log.Info("Swagger Host dikonfigurasi menggunakan Domain",
+		slog.Info("Swagger Host dikonfigurasi menggunakan Domain",
 			slog.String("domain", domain))
 		return domain
 	}
 	if ip := utils.ReadFile(cfg.CacheIPPath); ip != "" {
-		log.Info("Swagger Host dikonfigurasi menggunakan IP",
+		slog.Info("Swagger Host dikonfigurasi menggunakan IP",
 			slog.String("ip", ip))
 		return ip
 	}
 
-	log.Warn("File domain/IP tidak ditemukan, menggunakan fallback",
+	slog.Warn("File domain/IP tidak ditemukan, menggunakan fallback",
 		slog.String("fallback", cfg.AppAddr))
 	return cfg.AppAddr
 }

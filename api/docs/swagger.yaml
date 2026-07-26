@@ -4,9 +4,20 @@ definitions:
     properties:
       errors: {}
       message:
+        example: "no"
         type: string
       success:
+        example: false
         type: boolean
+    type: object
+  dto.PathData:
+    properties:
+      grpc:
+        type: string
+      upgrade:
+        type: string
+      ws:
+        type: string
     type: object
   dto.PayloadWSData:
     properties:
@@ -47,7 +58,7 @@ definitions:
       password:
         example: neko123
         type: string
-      payloadWS:
+      payload_ws:
         $ref: '#/definitions/dto.PayloadWSData'
       port:
         $ref: '#/definitions/dto.PortData'
@@ -59,9 +70,105 @@ definitions:
     properties:
       data: {}
       message:
+        example: ok
         type: string
       success:
+        example: true
         type: boolean
+    type: object
+  dto.TrojanData:
+    properties:
+      city:
+        example: Jakarta
+        type: string
+      expired:
+        example: "2006-01-02 15:04:05"
+        type: string
+      hostname:
+        example: domain.com
+        type: string
+      isp:
+        example: Neko Tunneling ltd
+        type: string
+      link:
+        $ref: '#/definitions/dto.XrayLinkData'
+      password:
+        example: neko123
+        type: string
+      path:
+        $ref: '#/definitions/dto.PathData'
+      port:
+        $ref: '#/definitions/dto.PortData'
+      username:
+        example: neko123
+        type: string
+    type: object
+  dto.VlessData:
+    properties:
+      city:
+        example: Jakarta
+        type: string
+      expired:
+        example: "2006-01-02 15:04:05"
+        type: string
+      hostname:
+        example: domain.com
+        type: string
+      isp:
+        example: Neko Tunneling ltd
+        type: string
+      link:
+        $ref: '#/definitions/dto.XrayLinkData'
+      password:
+        example: neko123
+        type: string
+      path:
+        $ref: '#/definitions/dto.PathData'
+      port:
+        $ref: '#/definitions/dto.PortData'
+      username:
+        example: neko123
+        type: string
+    type: object
+  dto.VmessData:
+    properties:
+      city:
+        example: Jakarta
+        type: string
+      expired:
+        example: "2006-01-02 15:04:05"
+        type: string
+      hostname:
+        example: domain.com
+        type: string
+      isp:
+        example: Neko Tunneling ltd
+        type: string
+      link:
+        $ref: '#/definitions/dto.XrayLinkData'
+      password:
+        example: neko123
+        type: string
+      path:
+        $ref: '#/definitions/dto.PathData'
+      port:
+        $ref: '#/definitions/dto.PortData'
+      username:
+        example: neko123
+        type: string
+    type: object
+  dto.XrayLinkData:
+    properties:
+      grpc:
+        type: string
+      none:
+        type: string
+      tls:
+        type: string
+      upnone:
+        type: string
+      uptls:
+        type: string
     type: object
 info:
   contact: {}
@@ -74,7 +181,7 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit)
+      - description: Durasi Trial (Menit, maks 1440)
         in: formData
         name: expired
         required: true
@@ -103,7 +210,9 @@ paths:
           description: Internal Server Error - Gagal eksekusi ke server
           schema:
             $ref: '#/definitions/dto.ErrorRes'
-      summary: Trial Akun Ssh
+      security:
+      - BearerAuth: []
+      summary: Trial Akun SSH
       tags:
       - Trial Akun
   /vps/trial/trojan:
@@ -111,14 +220,37 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit)
+      - description: Durasi Trial (Menit, maks 1440)
         in: formData
         name: expired
         required: true
         type: integer
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Berhasil membuat akun trial Trojan
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.SuccessRes'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.TrojanData'
+              type: object
+        "400":
+          description: Bad Request - Payload body tidak valid
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "422":
+          description: Unprocessable Entity - Validasi form gagal
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "500":
+          description: Internal Server Error - Gagal eksekusi ke server
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+      security:
+      - BearerAuth: []
       summary: Trial Akun Trojan
       tags:
       - Trial Akun
@@ -127,14 +259,37 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit)
+      - description: Durasi Trial (Menit, maks 1440)
         in: formData
         name: expired
         required: true
         type: integer
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Berhasil membuat akun trial Vless
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.SuccessRes'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.VlessData'
+              type: object
+        "400":
+          description: Bad Request - Payload body tidak valid
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "422":
+          description: Unprocessable Entity - Validasi form gagal
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "500":
+          description: Internal Server Error - Gagal eksekusi ke server
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+      security:
+      - BearerAuth: []
       summary: Trial Akun Vless
       tags:
       - Trial Akun
@@ -143,15 +298,44 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit)
+      - description: Durasi Trial (Menit, maks 1440)
         in: formData
         name: expired
         required: true
         type: integer
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Berhasil membuat akun trial Vmess
+          schema:
+            allOf:
+            - $ref: '#/definitions/dto.SuccessRes'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.VmessData'
+              type: object
+        "400":
+          description: Bad Request - Payload body tidak valid
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "422":
+          description: Unprocessable Entity - Validasi form gagal
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+        "500":
+          description: Internal Server Error - Gagal eksekusi ke server
+          schema:
+            $ref: '#/definitions/dto.ErrorRes'
+      security:
+      - BearerAuth: []
       summary: Trial Akun Vmess
       tags:
       - Trial Akun
+securityDefinitions:
+  BearerAuth:
+    description: 'Masukkan token dengan format: Bearer {token_anda}'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

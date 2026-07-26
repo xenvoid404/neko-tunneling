@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/vps/trial/ssh": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -26,11 +31,11 @@ const docTemplate = `{
                 "tags": [
                     "Trial Akun"
                 ],
-                "summary": "Trial Akun Ssh",
+                "summary": "Trial Akun SSH",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit)",
+                        "description": "Durasi Trial (Menit, maks 1440)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
@@ -78,6 +83,11 @@ const docTemplate = `{
         },
         "/vps/trial/trojan": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -91,17 +101,59 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit)",
+                        "description": "Durasi Trial (Menit, maks 1440)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "Berhasil membuat akun trial Trojan",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/dto.SuccessRes"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TrojanData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Payload body tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/vps/trial/vless": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -115,17 +167,59 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit)",
+                        "description": "Durasi Trial (Menit, maks 1440)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "Berhasil membuat akun trial Vless",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/dto.SuccessRes"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.VlessData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Payload body tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/vps/trial/vmess": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -139,13 +233,50 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit)",
+                        "description": "Durasi Trial (Menit, maks 1440)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "Berhasil membuat akun trial Vmess",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/dto.SuccessRes"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.VmessData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Payload body tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorRes"
+                        }
+                    }
+                }
             }
         }
     },
@@ -155,10 +286,26 @@ const docTemplate = `{
             "properties": {
                 "errors": {},
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "no"
                 },
                 "success": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "dto.PathData": {
+            "type": "object",
+            "properties": {
+                "grpc": {
+                    "type": "string"
+                },
+                "upgrade": {
+                    "type": "string"
+                },
+                "ws": {
+                    "type": "string"
                 }
             }
         },
@@ -219,7 +366,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "neko123"
                 },
-                "payloadWS": {
+                "payload_ws": {
                     "$ref": "#/definitions/dto.PayloadWSData"
                 },
                 "port": {
@@ -236,12 +383,156 @@ const docTemplate = `{
             "properties": {
                 "data": {},
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ok"
                 },
                 "success": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 }
             }
+        },
+        "dto.TrojanData": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Jakarta"
+                },
+                "expired": {
+                    "type": "string",
+                    "example": "2006-01-02 15:04:05"
+                },
+                "hostname": {
+                    "type": "string",
+                    "example": "domain.com"
+                },
+                "isp": {
+                    "type": "string",
+                    "example": "Neko Tunneling ltd"
+                },
+                "link": {
+                    "$ref": "#/definitions/dto.XrayLinkData"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "neko123"
+                },
+                "path": {
+                    "$ref": "#/definitions/dto.PathData"
+                },
+                "port": {
+                    "$ref": "#/definitions/dto.PortData"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "neko123"
+                }
+            }
+        },
+        "dto.VlessData": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Jakarta"
+                },
+                "expired": {
+                    "type": "string",
+                    "example": "2006-01-02 15:04:05"
+                },
+                "hostname": {
+                    "type": "string",
+                    "example": "domain.com"
+                },
+                "isp": {
+                    "type": "string",
+                    "example": "Neko Tunneling ltd"
+                },
+                "link": {
+                    "$ref": "#/definitions/dto.XrayLinkData"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "neko123"
+                },
+                "path": {
+                    "$ref": "#/definitions/dto.PathData"
+                },
+                "port": {
+                    "$ref": "#/definitions/dto.PortData"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "neko123"
+                }
+            }
+        },
+        "dto.VmessData": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Jakarta"
+                },
+                "expired": {
+                    "type": "string",
+                    "example": "2006-01-02 15:04:05"
+                },
+                "hostname": {
+                    "type": "string",
+                    "example": "domain.com"
+                },
+                "isp": {
+                    "type": "string",
+                    "example": "Neko Tunneling ltd"
+                },
+                "link": {
+                    "$ref": "#/definitions/dto.XrayLinkData"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "neko123"
+                },
+                "path": {
+                    "$ref": "#/definitions/dto.PathData"
+                },
+                "port": {
+                    "$ref": "#/definitions/dto.PortData"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "neko123"
+                }
+            }
+        },
+        "dto.XrayLinkData": {
+            "type": "object",
+            "properties": {
+                "grpc": {
+                    "type": "string"
+                },
+                "none": {
+                    "type": "string"
+                },
+                "tls": {
+                    "type": "string"
+                },
+                "upnone": {
+                    "type": "string"
+                },
+                "uptls": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Masukkan token dengan format: Bearer {token_anda}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

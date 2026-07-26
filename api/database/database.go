@@ -9,10 +9,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/xenvoid404/neko-tunneling/config"
-	"github.com/xenvoid404/neko-tunneling/pkg/logger"
 )
 
-var log = logger.CreateLogger()
 var DB *sql.DB
 
 func Connect(ctx context.Context, cfg *config.Config) error {
@@ -35,20 +33,20 @@ func Connect(ctx context.Context, cfg *config.Config) error {
 	}
 
 	DB = db
-	log.Info("Inisiasi database berhasil",
+	slog.Info("Inisiasi database berhasil",
 		slog.String("path", cfg.DBPath))
 	return nil
 }
 
-func Close() error {
+func Close() {
 	if DB != nil {
-		log.Info("Menutup koneksi database...")
+		slog.Info("Menutup koneksi database...")
 		if err := DB.Close(); err != nil {
-			log.Error("Gagal menutup koneksi database",
+			slog.Error("Gagal menutup koneksi database",
 				slog.Any("error", err))
 			return
 		}
-		log.Info("Koneksi database berhasil ditutup")
+		slog.Info("Koneksi database berhasil ditutup")
 	}
 }
 
@@ -77,6 +75,6 @@ func migrate(ctx context.Context, db *sql.DB) error {
 		return fmt.Errorf("gagal memuat tabel database: %w", err)
 	}
 
-	log.Info("Migrasi tabel database berhasil")
+	slog.Info("Migrasi tabel database berhasil")
 	return nil
 }
