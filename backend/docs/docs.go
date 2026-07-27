@@ -35,7 +35,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit, maks 1440)",
+                        "description": "Durasi Trial (menit)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
@@ -43,7 +43,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Berhasil membuat akun trial SSH",
+                        "description": "ok",
                         "schema": {
                             "allOf": [
                                 {
@@ -61,19 +61,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Payload body tidak valid",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
@@ -101,7 +101,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit, maks 1440)",
+                        "description": "Durasi Trial (menit)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
@@ -109,7 +109,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Berhasil membuat akun trial Trojan",
+                        "description": "ok",
                         "schema": {
                             "allOf": [
                                 {
@@ -127,19 +127,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Payload body tidak valid",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
@@ -167,7 +167,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit, maks 1440)",
+                        "description": "Durasi Trial (menit)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
@@ -175,7 +175,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Berhasil membuat akun trial Vless",
+                        "description": "ok",
                         "schema": {
                             "allOf": [
                                 {
@@ -193,19 +193,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Payload body tidak valid",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
@@ -233,7 +233,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Durasi Trial (Menit, maks 1440)",
+                        "description": "Durasi Trial (menit)",
                         "name": "expired",
                         "in": "formData",
                         "required": true
@@ -241,7 +241,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Berhasil membuat akun trial Vmess",
+                        "description": "ok",
                         "schema": {
                             "allOf": [
                                 {
@@ -259,19 +259,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Payload body tidak valid",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "422": {
-                        "description": "Unprocessable Entity - Validasi form gagal",
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error - Gagal eksekusi ke server",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorRes"
                         }
@@ -529,7 +529,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Masukkan token dengan format: Bearer {token}",
+            "description": "Masukkan token Anda saja (Awalan \"Bearer \" akan ditambahkan otomatis)",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -544,7 +544,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Neko Tunneling API",
-	Description:      "Selamat datang di dokumentasi Neko Tunneling API",
+	Description:      "Selamat datang di dokumentasi API Neko Tunneling. Halaman ini berisi referensi endpoint lengkap untuk mempermudah integrasi VPS dengan Web Panel, skrip automasi, maupun Bot Telegram.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

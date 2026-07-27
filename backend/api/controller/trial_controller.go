@@ -161,11 +161,11 @@ func buildTrialXrayLink(protocol, username, hostname, secret, wsPath, upPath, gr
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
-// @Success   200 {object} dto.SuccessRes{data=dto.SSHData} "Berhasil membuat akun trial SSH"
-// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
-// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
-// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Param     expired formData int true "Durasi Trial (menit)"
+// @Success   200 {object} dto.SuccessRes{data=dto.SSHData} "ok"
+// @Failure   400 {object} dto.ErrorRes "Bad Request"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error"
 // @Security  BearerAuth
 // @Router    /vps/trial/ssh [post]
 func TrialSSH(cfg *config.Config) fiber.Handler {
@@ -177,11 +177,11 @@ func TrialSSH(cfg *config.Config) fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
-// @Success   200 {object} dto.SuccessRes{data=dto.VmessData} "Berhasil membuat akun trial Vmess"
-// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
-// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
-// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Param     expired formData int true "Durasi Trial (menit)"
+// @Success   200 {object} dto.SuccessRes{data=dto.VmessData} "ok"
+// @Failure   400 {object} dto.ErrorRes "Bad Request"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error"
 // @Security  BearerAuth
 // @Router    /vps/trial/vmess [post]
 func TrialVmess(cfg *config.Config) fiber.Handler {
@@ -193,11 +193,11 @@ func TrialVmess(cfg *config.Config) fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
-// @Success   200 {object} dto.SuccessRes{data=dto.VlessData} "Berhasil membuat akun trial Vless"
-// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
-// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
-// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Param     expired formData int true "Durasi Trial (menit)"
+// @Success   200 {object} dto.SuccessRes{data=dto.VlessData} "ok"
+// @Failure   400 {object} dto.ErrorRes "Bad Request"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error"
 // @Security  BearerAuth
 // @Router    /vps/trial/vless [post]
 func TrialVless(cfg *config.Config) fiber.Handler {
@@ -209,11 +209,11 @@ func TrialVless(cfg *config.Config) fiber.Handler {
 // @Tags      Trial Akun
 // @Accept    x-www-form-urlencoded
 // @Produce   json
-// @Param     expired formData int true "Durasi Trial (Menit, maks 1440)"
-// @Success   200 {object} dto.SuccessRes{data=dto.TrojanData} "Berhasil membuat akun trial Trojan"
-// @Failure   400 {object} dto.ErrorRes "Bad Request - Payload body tidak valid"
-// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity - Validasi form gagal"
-// @Failure   500 {object} dto.ErrorRes "Internal Server Error - Gagal eksekusi ke server"
+// @Param     expired formData int true "Durasi Trial (menit)"
+// @Success   200 {object} dto.SuccessRes{data=dto.TrojanData} "ok"
+// @Failure   400 {object} dto.ErrorRes "Bad Request"
+// @Failure   422 {object} dto.ErrorRes "Unprocessable Entity"
+// @Failure   500 {object} dto.ErrorRes "Internal Server Error"
 // @Security  BearerAuth
 // @Router    /vps/trial/trojan [post]
 func TrialTrojan(cfg *config.Config) fiber.Handler {

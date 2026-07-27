@@ -31,7 +31,7 @@ func CreateTrial(ctx context.Context, cfg *config.Config, protocol string, expir
 			return nil, fmt.Errorf("provisioning SSH gagal: %w", err)
 		}
 	} else {
-		if err := provision.AddXrayUser(execCtx, protocol, password, username); err != nil {
+		if err := provision.AddXrayUser(execCtx, protocol, username, password); err != nil {
 			return nil, fmt.Errorf("provisioning Xray gagal: %w", err)
 		}
 	}
@@ -59,7 +59,7 @@ func rollbackProvisioning(ctx context.Context, protocol, username string) {
 	if protocol == "ssh" {
 		err = provision.DeleteSSHUser(ctx, username)
 	} else {
-		err = provision.RemoveXrayUser(ctx, protocol, username)
+		err = provision.DelXrayUser(ctx, protocol, username)
 	}
 
 	if err != nil {

@@ -19,42 +19,48 @@ type Route struct {
 }
 
 type Config struct {
-	AppName         string
-	AppKey          string
-	AppAddr         string
-	LogLevel        string
-	LogFormat       string
-	CacheIPPath     string
-	CacheDomainPath string
-	CacheISPPath    string
-	CacheCityPath   string
-	DBPath          string
-	CertFile        string
-	KeyFile         string
-	DropbearAddr    string
-	OpenSSHAddr     string
-	XrayAPIAddr     string
-	Routes          []Route
-	Listeners       []Listener
+	AppName            string
+	AppKey             string
+	AppAddr            string
+	LogLevel           string
+	LogFormat          string
+	CacheIPPath        string
+	CacheDomainPath    string
+	CacheISPPath       string
+	CacheCityPath      string
+	DBPath             string
+	CertFile           string
+	KeyFile            string
+	DropbearAddr       string
+	OpenSSHAddr        string
+	XrayAPIAddr        string
+	XrayVmessConfPath  string
+	XrayVlessConfPath  string
+	XrayTrojanConfPath string
+	Routes             []Route
+	Listeners          []Listener
 }
 
 func GetConfig() *Config {
 	return &Config{
-		AppName:         os.Getenv("APP_NAME"),
-		AppKey:          os.Getenv("APP_KEY"),
-		AppAddr:         os.Getenv("APP_ADDR"),
-		LogLevel:        os.Getenv("LOG_LEVEL"),
-		LogFormat:       os.Getenv("LOG_FORMAT"),
-		CacheIPPath:     os.Getenv("CACHE_IP_PATH"),
-		CacheDomainPath: os.Getenv("CACHE_DOMAIN_PATH"),
-		CacheISPPath:    os.Getenv("CACHE_ISP_PATH"),
-		CacheCityPath:   os.Getenv("CACHE_ISP_PATH"),
-		DBPath:          os.Getenv("DB_PATH"),
-		CertFile:        os.Getenv("CERT_FILE"),
-		KeyFile:         os.Getenv("KEY_FILE"),
-		DropbearAddr:    os.Getenv("DROPBEAR_ADDR"),
-		OpenSSHAddr:     os.Getenv("OPENSSH_ADDR"),
-		XrayAPIAddr:     os.Getenv("XRAY_API_ADDR"),
+		AppName:            os.Getenv("APP_NAME"),
+		AppKey:             os.Getenv("APP_KEY"),
+		AppAddr:            os.Getenv("APP_ADDR"),
+		LogLevel:           os.Getenv("LOG_LEVEL"),
+		LogFormat:          os.Getenv("LOG_FORMAT"),
+		CacheIPPath:        os.Getenv("CACHE_IP_PATH"),
+		CacheDomainPath:    os.Getenv("CACHE_DOMAIN_PATH"),
+		CacheISPPath:       os.Getenv("CACHE_ISP_PATH"),
+		CacheCityPath:      os.Getenv("CACHE_CITY_PATH"),
+		DBPath:             os.Getenv("DB_PATH"),
+		CertFile:           os.Getenv("CERT_FILE"),
+		KeyFile:            os.Getenv("KEY_FILE"),
+		DropbearAddr:       os.Getenv("DROPBEAR_ADDR"),
+		OpenSSHAddr:        os.Getenv("OPENSSH_ADDR"),
+		XrayAPIAddr:        os.Getenv("XRAY_API_ADDR"),
+		XrayVmessConfPath:  os.Getenv("XRAY_VMESS_CONF_PATH"),
+		XrayVlessConfPath:  os.Getenv("XRAY_VLESS_CONF_PATH"),
+		XrayTrojanConfPath: os.Getenv("XRAY_TROJAN_CONF_PATH"),
 		Listeners: []Listener{
 			{Addr: ":80", IsTLS: false, SSHBackend: "dropbear"},
 			{Addr: ":8080", IsTLS: false, SSHBackend: "dropbear"},

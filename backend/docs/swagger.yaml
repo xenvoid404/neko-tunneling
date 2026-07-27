@@ -172,7 +172,9 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Selamat datang di dokumentasi Neko Tunneling API
+  description: Selamat datang di dokumentasi API Neko Tunneling. Halaman ini berisi
+    referensi endpoint lengkap untuk mempermudah integrasi VPS dengan Web Panel, skrip
+    automasi, maupun Bot Telegram.
   title: Neko Tunneling API
   version: "1.0"
 paths:
@@ -181,7 +183,7 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit, maks 1440)
+      - description: Durasi Trial (menit)
         in: formData
         name: expired
         required: true
@@ -190,7 +192,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Berhasil membuat akun trial SSH
+          description: ok
           schema:
             allOf:
             - $ref: '#/definitions/dto.SuccessRes'
@@ -199,15 +201,15 @@ paths:
                   $ref: '#/definitions/dto.SSHData'
               type: object
         "400":
-          description: Bad Request - Payload body tidak valid
+          description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "422":
-          description: Unprocessable Entity - Validasi form gagal
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "500":
-          description: Internal Server Error - Gagal eksekusi ke server
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorRes'
       security:
@@ -220,7 +222,7 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit, maks 1440)
+      - description: Durasi Trial (menit)
         in: formData
         name: expired
         required: true
@@ -229,7 +231,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Berhasil membuat akun trial Trojan
+          description: ok
           schema:
             allOf:
             - $ref: '#/definitions/dto.SuccessRes'
@@ -238,15 +240,15 @@ paths:
                   $ref: '#/definitions/dto.TrojanData'
               type: object
         "400":
-          description: Bad Request - Payload body tidak valid
+          description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "422":
-          description: Unprocessable Entity - Validasi form gagal
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "500":
-          description: Internal Server Error - Gagal eksekusi ke server
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorRes'
       security:
@@ -259,7 +261,7 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit, maks 1440)
+      - description: Durasi Trial (menit)
         in: formData
         name: expired
         required: true
@@ -268,7 +270,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Berhasil membuat akun trial Vless
+          description: ok
           schema:
             allOf:
             - $ref: '#/definitions/dto.SuccessRes'
@@ -277,15 +279,15 @@ paths:
                   $ref: '#/definitions/dto.VlessData'
               type: object
         "400":
-          description: Bad Request - Payload body tidak valid
+          description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "422":
-          description: Unprocessable Entity - Validasi form gagal
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "500":
-          description: Internal Server Error - Gagal eksekusi ke server
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorRes'
       security:
@@ -298,7 +300,7 @@ paths:
       consumes:
       - application/x-www-form-urlencoded
       parameters:
-      - description: Durasi Trial (Menit, maks 1440)
+      - description: Durasi Trial (menit)
         in: formData
         name: expired
         required: true
@@ -307,7 +309,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Berhasil membuat akun trial Vmess
+          description: ok
           schema:
             allOf:
             - $ref: '#/definitions/dto.SuccessRes'
@@ -316,15 +318,15 @@ paths:
                   $ref: '#/definitions/dto.VmessData'
               type: object
         "400":
-          description: Bad Request - Payload body tidak valid
+          description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "422":
-          description: Unprocessable Entity - Validasi form gagal
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/dto.ErrorRes'
         "500":
-          description: Internal Server Error - Gagal eksekusi ke server
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorRes'
       security:
@@ -334,7 +336,7 @@ paths:
       - Trial Akun
 securityDefinitions:
   BearerAuth:
-    description: 'Masukkan token dengan format: Bearer {token}'
+    description: Masukkan token Anda saja (Awalan "Bearer " akan ditambahkan otomatis)
     in: header
     name: Authorization
     type: apiKey

@@ -22,14 +22,14 @@ import (
 	"github.com/xenvoid404/neko-tunneling/pkg/utils"
 )
 
-// @Version                    1.0
-// @BasePath                   /
 // @Title                      Neko Tunneling API
-// @Description                Selamat datang di dokumentasi Neko Tunneling API
+// @Version                    1.0
+// @Description                Selamat datang di dokumentasi API Neko Tunneling. Halaman ini berisi referensi endpoint lengkap untuk mempermudah integrasi VPS dengan Web Panel, skrip automasi, maupun Bot Telegram.
+// @BasePath                   /
 // @SecurityDefinitions.apikey BearerAuth
 // @In                         header
 // @Name                       Authorization
-// @Description                Masukkan token dengan format: Bearer {token}
+// @Description                Masukkan token Anda saja (Awalan "Bearer " akan ditambahkan otomatis)
 func main() {
 	cfg := config.GetConfig()
 	logger.CreateLogger(cfg)
@@ -47,18 +47,16 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := provision.InitXrayClient(cfg.XrayAPIAddr); err != nil {
+	if err := provision.InitXrayClient(cfg.XrayAPIAddr, map[string]string{
+		"vmess":  cfg.XrayVmessConfPath,
+		"vless":  cfg.XrayVlessConfPath,
+		"trojan": cfg.XrayTrojanConfPath,
+	}); err != nil {
 		slog.Error("Gagal inisiasi klien Xray API, aplikasi terhenti",
 			slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer func() {
-		slog.Info("Menutup koneksi Xray API")
-		if err := provision.CloseXrayClient(); err != nil {
-			slog.Error("Gagal menutup koneksi Xray API",
-				slog.Any("error", err))
-		}
-	}()
+	defer provision.CloseXrayClient()
 
 	docs.SwaggerInfo.Host = resolveSwaggerHost(cfg)
 
