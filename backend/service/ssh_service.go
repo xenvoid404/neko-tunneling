@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 type SSHService struct{}
@@ -14,8 +13,8 @@ func NewSSHService() *SSHService {
 	return &SSHService{}
 }
 
-func (s *SSHService) AddUser(ctx context.Context, username, password string, expired time.Time) error {
-	cmdAdd := exec.CommandContext(ctx, "useradd", "-M", "-N", "-s", "/bin/false", "-e", expired.Format("2006-01-02"), username)
+func (s *SSHService) AddUser(ctx context.Context, username, password string) error {
+	cmdAdd := exec.CommandContext(ctx, "useradd", "-M", "-N", "-s", "/bin/false", "-e", username)
 	if output, err := cmdAdd.CombinedOutput(); err != nil {
 		return fmt.Errorf("useradd gagal: %w (output: %s)", err, strings.TrimSpace(string(output)))
 	}

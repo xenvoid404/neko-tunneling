@@ -43,6 +43,15 @@ definitions:
           type: string
         type: array
     type: object
+  model.RenewData:
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+      username:
+        type: string
+    type: object
   model.SSHData:
     properties:
       city:
@@ -378,6 +387,318 @@ paths:
       summary: Create Akun Vmess
       tags:
       - Create Akun
+  /vps/delete/ssh/{username}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            $ref: '#/definitions/model.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Akun SSH
+      tags:
+      - Delete Akun
+  /vps/delete/trojan/{username}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            $ref: '#/definitions/model.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Akun Trojan
+      tags:
+      - Delete Akun
+  /vps/delete/vless/{username}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            $ref: '#/definitions/model.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Akun Vless
+      tags:
+      - Delete Akun
+  /vps/delete/vmess/{username}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            $ref: '#/definitions/model.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Akun Vmess
+      tags:
+      - Delete Akun
+  /vps/renew/ssh/{username}:
+    patch:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.RenewData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew Akun SSH
+      tags:
+      - Renew Akun
+  /vps/renew/trojan/{username}:
+    patch:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.RenewData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew Akun Trojan
+      tags:
+      - Renew Akun
+  /vps/renew/vless/{username}:
+    patch:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.RenewData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew Akun Vless
+      tags:
+      - Renew Akun
+  /vps/renew/vmess/{username}:
+    patch:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.RenewData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew Akun Vmess
+      tags:
+      - Renew Akun
   /vps/trial/ssh:
     post:
       consumes:

@@ -11,3 +11,7 @@ type CreateRequest struct {
 	LimitQuota *int    `json:"limit_quota" form:"limit_quota" validate:"omitempty,gte=0"`
 	Expired    int     `json:"expired" form:"expired" validate:"required,min=1"`
 }
+
+type RenewRequest struct {
+	Expired int `json:"expired" form:"expired" validate:"required,min=1"`
+}

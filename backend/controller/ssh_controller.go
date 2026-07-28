@@ -67,7 +67,7 @@ func (ctrl *SSHController) Trial(c fiber.Ctx) error {
 	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
-	if err := ctrl.sshService.AddUser(execCtx, username, password, expired); err != nil {
+	if err := ctrl.sshService.AddUser(execCtx, username, password); err != nil {
 		slog.Error("Gagal membuat trial akun",
 			slog.String("protocol", "ssh"),
 			slog.String("username", username),
@@ -168,7 +168,7 @@ func (ctrl *SSHController) Create(c fiber.Ctx) error {
 		})
 	}
 
-	username := strings.ToLower(string(req.Username))
+	username := strings.TrimSpace(strings.ToLower(string(req.Username)))
 	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
@@ -194,7 +194,7 @@ func (ctrl *SSHController) Create(c fiber.Ctx) error {
 
 	password := utils.RandomPassword("ssh")
 	if req.Password != nil && *req.Password != "" {
-		password = *req.Password
+		password = strings.TrimSpace(strings.ToLower(*req.Password))
 	}
 
 	limitIP := 0
@@ -209,7 +209,7 @@ func (ctrl *SSHController) Create(c fiber.Ctx) error {
 
 	expired := time.Now().Add(time.Duration(req.Expired) * 24 * time.Hour)
 
-	if err := ctrl.sshService.AddUser(execCtx, username, password, expired); err != nil {
+	if err := ctrl.sshService.AddUser(execCtx, username, password); err != nil {
 		slog.Error("Gagal membuat akun",
 			slog.String("protocol", "ssh"),
 			slog.String("username", username),
@@ -277,8 +277,183 @@ func (ctrl *SSHController) Create(c fiber.Ctx) error {
 	})
 }
 
-func RenewSSH() {
+// DeleteSSH godoc
+// @Summary   Delete Akun SSH
+// @Tags      Delete Akun
+// @Accept    json
+// @Produce   json
+// @Param     username path string true "Username akun"
+// @Success   200 {object} model.SuccessResponse "ok"
+// @Failure   400 {object} model.ErrorResponse "Bad Request"
+// @Failure   422 {object} model.ErrorResponse "Unprocessable Entity"
+// @Failure   500 {object} model.ErrorResponse "Internal Server Error"
+// @Security  BearerAuth
+// @Router    /vps/delete/ssh/{username} [delete]
+func (ctrl *SSHController) Delete(c fiber.Ctx) error {
+	username := strings.ToLower(strings.TrimSpace(c.Params("username")))
+	if username == "" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak boleh kosong"},
+			},
+		})
+	}
 
+	execCtx, cancel := context.WithTimeout(c.Context(), 10*time.Second)
+	defer cancel()
+
+	existing, err := ctrl.userRepository.FindByUsername(execCtx, username)
+	if err != nil {
+		slog.Error("Gagal mengecek username",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "pengecekan username gagal",
+		})
+	}
+	if existing == nil || existing.Protocol != "ssh" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak ditemukan"},
+			},
+		})
+	}
+
+	if err := ctrl.sshService.DelUser(execCtx, username); err != nil {
+		slog.Error("Gagal menghapus user dari sistem",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "gagal menghapus user dari server",
+		})
+	}
+
+	if err := ctrl.userRepository.DeleteByUsername(execCtx, username); err != nil {
+		slog.Error("Gagal menghapus user dari database",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "gagal menghapus data user",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(&model.SuccessResponse{
+		Success: true,
+		Message: "berhasil menghapus user",
+	})
+}
+
+// RenewSSH godoc
+// @Summary   Renew Akun SSH
+// @Tags      Renew Akun
+// @Accept    x-www-form-urlencoded
+// @Produce   json
+// @Param     username path string true "Username akun"
+// @Param     expired formData int true "Durasi masa aktif (hari)"
+// @Success   200 {object} model.SuccessResponse{data=model.RenewData} "ok"
+// @Failure   400 {object} model.ErrorResponse "Bad Request"
+// @Failure   422 {object} model.ErrorResponse "Unprocessable Entity"
+// @Failure   500 {object} model.ErrorResponse "Internal Server Error"
+// @Security  BearerAuth
+// @Router    /vps/renew/ssh/{username} [patch]
+func (ctrl *SSHController) Renew(c fiber.Ctx) error {
+	username := strings.TrimSpace(strings.ToLower(c.Params("username")))
+	if username == "" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak boleh kosong"},
+			},
+		})
+	}
+
+	var req model.RenewRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "body payload tidak valid",
+		})
+	}
+	if errs := ctrl.validate.ValidateStruct(&req); errs != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors:  errs,
+		})
+	}
+
+	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	existing, err := ctrl.userRepository.FindByUsername(execCtx, username)
+	if err != nil {
+		slog.Error("Gagal mengecek username",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "pengecekan username gagal",
+		})
+	}
+	if existing == nil || existing.Protocol != "ssh" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak ditemukan"},
+			},
+		})
+	}
+	if existing.Status != "active" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"status user tidak aktif, tidak dapat diperpanjang"},
+			},
+		})
+	}
+
+	oldExpired := existing.ExpiredAt
+	now := time.Now()
+	baseTime := oldExpired
+	if oldExpired.Before(now) {
+		baseTime = now
+	}
+	newExpired := baseTime.AddDate(0, 0, req.Expired)
+
+	if err := ctrl.userRepository.UpdateExpiredByUsername(execCtx, username, newExpired); err != nil {
+		slog.Error("Gagal memperbarui masa aktif ke database",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "gagal memperbarui masa aktif",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(&model.SuccessResponse{
+		Success: true,
+		Message: "ok",
+		Data: model.RenewData{
+			Username: existing.Username,
+			From:     oldExpired.Format("2006-01-02 15:04:05"),
+			To:       newExpired.Format("2006-01-02 15:04:05"),
+		},
+	})
 }
 
 func DetailSSH() {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/xenvoid404/neko-tunneling/model"
 )
@@ -48,4 +49,48 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*
 	}
 
 	return &u, nil
+}
+
+func (r *UserRepository) UpdateExpiredByUsername(ctx context.Context, username string, expired time.Time) error {
+	query := `
+	UPDATE users 
+	SET expired_at = ? 
+	WHERE username = ?
+	`
+
+	result, err := r.db.ExecContext(ctx, query, expired, username)
+	if err != nil {
+		return fmt.Errorf("gagal update masa aktif user %s: %w", username, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("gagal mengecek status update: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("user tidak ditemukan")
+	}
+
+	return nil
+}
+
+func (r *UserRepository) DeleteByUsername(ctx context.Context, username string) error {
+	query := `DELETE FROM users WHERE username = ?`
+
+	result, err := r.db.ExecContext(ctx, query, username)
+	if err != nil {
+		return fmt.Errorf("gagal menghapus user %s dari database: %w", username, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("gagal mengecek status delete: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("user tidak ditemukan atau sudah terhapus")
+	}
+
+	return nil
 }

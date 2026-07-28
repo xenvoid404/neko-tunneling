@@ -84,3 +84,9 @@ type XrayLinkData struct {
 	UpNone string `json:"upnone,omitempty"`
 	UpTLS  string `json:"uptls,omitempty"`
 }
+
+type RenewData struct {
+	Username string `json:"username"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+}

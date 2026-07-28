@@ -36,4 +36,14 @@ func (r *Router) SetupAPIRoutes() {
 	api.Post("/create/vmess", vmessController.Create)
 	api.Post("/create/vless", vlessController.Create)
 	api.Post("/create/trojan", trojanController.Create)
+
+	api.Patch("/renew/ssh/:username", sshController.Renew)
+	api.Patch("/renew/vmess/:username", vmessController.Renew)
+	api.Patch("/renew/vless/:username", vlessController.Renew)
+	api.Patch("/renew/trojan/:username", trojanController.Renew)
+
+	api.Delete("/delete/ssh/:username", sshController.Delete)
+	api.Delete("/delete/vmess/:username", vmessController.Delete)
+	api.Delete("/delete/vless/:username", vlessController.Delete)
+	api.Delete("/delete/trojan/:username", trojanController.Delete)
 }

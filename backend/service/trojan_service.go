@@ -224,7 +224,7 @@ func (s *TrojanService) delFromMemory(ctx context.Context, username string) erro
 		return fmt.Errorf("field \"inbounds\" tidak ditemukan di file config")
 	}
 
-	var filteredInbounds []interface{}
+	var tagsToRemove []string
 	for _, item := range inbounds {
 		inbound, ok := item.(map[string]interface{})
 		if !ok {
@@ -236,67 +236,40 @@ func (s *TrojanService) delFromMemory(ctx context.Context, username string) erro
 			continue
 		}
 
-		var targetClient interface{}
-		clients, _ := settings["clients"].([]interface{})
-		for _, c := range clients {
-			cMap, cOk := c.(map[string]interface{})
-			if cOk && cMap["email"] == username {
-				targetClient = c
-				break
-			}
-		}
-		if targetClient == nil {
+		clients, ok := settings["clients"].([]interface{})
+		if !ok {
 			continue
 		}
 
-		inboundCopy := make(map[string]interface{}, len(inbound))
-		for k, v := range inbound {
-			if subMap, ok := v.(map[string]interface{}); ok {
-				subCopy := make(map[string]interface{}, len(subMap))
-				for sk, sv := range subMap {
-					subCopy[sk] = sv
-				}
-				inboundCopy[k] = subCopy
-			} else {
-				inboundCopy[k] = v
+		userFound := false
+		for _, c := range clients {
+			cMap, cOk := c.(map[string]interface{})
+			if cOk && cMap["email"] == username {
+				userFound = true
+				break
 			}
 		}
 
-		inboundCopySettings := inboundCopy["settings"].(map[string]interface{})
-		inboundCopySettings["clients"] = []interface{}{targetClient}
-		filteredInbounds = append(filteredInbounds, inboundCopy)
+		if userFound {
+			if tag, tagOk := inbound["tag"].(string); tagOk && tag != "" {
+				tagsToRemove = append(tagsToRemove, tag)
+			}
+		}
 	}
 
-	if len(filteredInbounds) == 0 {
+	if len(tagsToRemove) == 0 {
 		return nil
 	}
 
-	minRoot := map[string]interface{}{"inbounds": filteredInbounds}
-	tmpData, err := json.MarshalIndent(minRoot, "", "  ")
-	if err != nil {
-		return fmt.Errorf("gagal marshal data temp: %w", err)
-	}
+	for _, tag := range tagsToRemove {
+		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		cmd := exec.CommandContext(cmdCtx, "xray", "api", "rmu", "--server="+s.cfg.XrayAPIAddr, "-tag="+tag, username)
+		output, err := cmd.CombinedOutput()
+		cancel()
 
-	tmpFile, err := os.CreateTemp("", "xray-trojan-rmu-*.json")
-	if err != nil {
-		return fmt.Errorf("gagal membuat file temp: %w", err)
-	}
-	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath)
-
-	if _, err := tmpFile.Write(tmpData); err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("gagal menulis file temp: %w", err)
-	}
-	tmpFile.Close()
-
-	cmdCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(cmdCtx, "xray", "api", "rmu", "--server="+s.cfg.XrayAPIAddr, tmpPath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("gagal eksekusi xray api rmu: %w (output: %s)", err, strings.TrimSpace(string(output)))
+		if err != nil {
+			return fmt.Errorf("gagal eksekusi xray api rmu untuk tag %s: %w (output: %s)", tag, err, strings.TrimSpace(string(output)))
+		}
 	}
 
 	return nil
