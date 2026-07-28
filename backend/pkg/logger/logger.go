@@ -8,33 +8,27 @@ import (
 	"github.com/xenvoid404/neko-tunneling/config"
 )
 
-func CreateLogger(cfg *config.Config) *slog.Logger {
-	levelStr := strings.ToLower(cfg.LogLevel)
-	formatStr := strings.ToLower(cfg.LogFormat)
-
-	var logLevel slog.Level
-	switch levelStr {
+func Setup(cfg *config.Config) {
+	var level slog.Level
+	switch strings.ToLower(cfg.LogLevel) {
 	case "debug":
-		logLevel = slog.LevelDebug
+		level = slog.LevelDebug
 	case "warn", "warning":
-		logLevel = slog.LevelWarn
+		level = slog.LevelWarn
 	case "error":
-		logLevel = slog.LevelError
+		level = slog.LevelError
 	default:
-		logLevel = slog.LevelInfo
+		level = slog.LevelInfo
 	}
 
-	opts := &slog.HandlerOptions{Level: logLevel}
+	opts := &slog.HandlerOptions{Level: level}
 
 	var handler slog.Handler
-	if formatStr == "json" {
+	if strings.ToLower(cfg.LogFormat) == "json" {
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	} else {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
-	return logger
+	slog.SetDefault(slog.New(handler))
 }

@@ -5,52 +5,60 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/xenvoid404/neko-tunneling/config"
 )
 
-var DB *sql.DB
+type Database struct {
+	*sql.DB
+}
 
-func Connect(ctx context.Context, cfg *config.Config) error {
+func Setup(ctx context.Context, cfg *config.Config) *Database {
+	dbCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	dsn := fmt.Sprintf("file:%s?_fk=1&_journal_mode=WAL&_synchronous=NORMAL&_temp_store=MEMORY", cfg.DBPath)
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
-		return fmt.Errorf("gagal membuka database: %w", err)
+		slog.Error("Gagal membuka database",
+			slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
-	if err := db.PingContext(ctx); err != nil {
-		return fmt.Errorf("database tidak merespon: %w", err)
+	if err := db.PingContext(dbCtx); err != nil {
+		slog.Error("Database tidak merespon",
+			slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	if err := migrate(ctx, db); err != nil {
-		return err
+	appDB := &Database{db}
+
+	if err := appDB.Migrate(dbCtx); err != nil {
+		slog.Error("Gagal melakukan migrasi database",
+			slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	DB = db
-	slog.Info("Inisiasi database berhasil",
+	slog.Info("Inisiasi dan migrasi database berhasil",
 		slog.String("path", cfg.DBPath))
-	return nil
+	return appDB
 }
 
-func Close() {
-	if DB != nil {
-		slog.Info("Menutup koneksi database...")
-		if err := DB.Close(); err != nil {
-			slog.Error("Gagal menutup koneksi database",
-				slog.Any("error", err))
-			return
-		}
-		slog.Info("Koneksi database berhasil ditutup")
+func (d *Database) Close() error {
+	if d == nil || d.DB == nil {
+		return nil
 	}
+	return d.DB.Close()
 }
 
-func migrate(ctx context.Context, db *sql.DB) error {
+func (d *Database) Migrate(ctx context.Context) error {
 	query := `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +79,7 @@ func migrate(ctx context.Context, db *sql.DB) error {
   END;
   `
 
-	if _, err := db.ExecContext(ctx, query); err != nil {
+	if _, err := d.ExecContext(ctx, query); err != nil {
 		return fmt.Errorf("gagal memuat tabel database: %w", err)
 	}
 

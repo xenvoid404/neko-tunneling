@@ -15,6 +15,370 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/vps/create/ssh": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Create Akun"
+                ],
+                "summary": "Create Akun SSH",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username akun",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pasword akun (akan dibuat random jika kosong)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit IP (unlimited jika kosong)",
+                        "name": "limit_ip",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit Quota (unlimited jika kosong)",
+                        "name": "limit_quota",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Durasi masa aktif (hari)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.SSHData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/vps/create/trojan": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Create Akun"
+                ],
+                "summary": "Create Akun Trojan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username akun",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pasword akun (akan dibuat random jika kosong)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit IP (unlimited jika kosong)",
+                        "name": "limit_ip",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit Quota (unlimited jika kosong)",
+                        "name": "limit_quota",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Durasi masa aktif (hari)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.TrojanData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/vps/create/vless": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Create Akun"
+                ],
+                "summary": "Create Akun Vless",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username akun",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pasword akun (akan dibuat random jika kosong)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit IP (unlimited jika kosong)",
+                        "name": "limit_ip",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit Quota (unlimited jika kosong)",
+                        "name": "limit_quota",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Durasi masa aktif (hari)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.VlessData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/vps/create/vmess": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Create Akun"
+                ],
+                "summary": "Create Akun Vmess",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username akun",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pasword akun (akan dibuat random jika kosong)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit IP (unlimited jika kosong)",
+                        "name": "limit_ip",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit Quota (unlimited jika kosong)",
+                        "name": "limit_quota",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Durasi masa aktif (hari)",
+                        "name": "expired",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.VmessData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/vps/trial/ssh": {
             "post": {
                 "security": [
@@ -47,13 +411,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/dto.SuccessRes"
+                                    "$ref": "#/definitions/model.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.SSHData"
+                                            "$ref": "#/definitions/model.SSHData"
                                         }
                                     }
                                 }
@@ -63,19 +427,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     }
                 }
@@ -113,13 +477,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/dto.SuccessRes"
+                                    "$ref": "#/definitions/model.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.TrojanData"
+                                            "$ref": "#/definitions/model.TrojanData"
                                         }
                                     }
                                 }
@@ -129,19 +493,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     }
                 }
@@ -179,13 +543,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/dto.SuccessRes"
+                                    "$ref": "#/definitions/model.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.VlessData"
+                                            "$ref": "#/definitions/model.VlessData"
                                         }
                                     }
                                 }
@@ -195,19 +559,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     }
                 }
@@ -245,13 +609,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/dto.SuccessRes"
+                                    "$ref": "#/definitions/model.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.VmessData"
+                                            "$ref": "#/definitions/model.VmessData"
                                         }
                                     }
                                 }
@@ -261,19 +625,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorRes"
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     }
                 }
@@ -281,21 +645,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.ErrorRes": {
+        "model.ErrorResponse": {
             "type": "object",
             "properties": {
                 "errors": {},
                 "message": {
-                    "type": "string",
-                    "example": "no"
+                    "type": "string"
                 },
                 "success": {
-                    "type": "boolean",
-                    "example": false
+                    "type": "boolean"
                 }
             }
         },
-        "dto.PathData": {
+        "model.PathData": {
             "type": "object",
             "properties": {
                 "grpc": {
@@ -309,7 +671,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PayloadWSData": {
+        "model.PayloadWSData": {
             "type": "object",
             "properties": {
                 "payloadcdn": {
@@ -320,9 +682,15 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PortData": {
+        "model.PortData": {
             "type": "object",
             "properties": {
+                "grpc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "none": {
                     "type": "array",
                     "items": {
@@ -343,170 +711,144 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SSHData": {
+        "model.SSHData": {
             "type": "object",
             "properties": {
                 "city": {
-                    "type": "string",
-                    "example": "Jakarta"
+                    "type": "string"
                 },
                 "expired": {
-                    "type": "string",
-                    "example": "2006-01-02 15:04:05"
+                    "type": "string"
                 },
                 "hostname": {
-                    "type": "string",
-                    "example": "domain.com"
+                    "type": "string"
                 },
                 "isp": {
-                    "type": "string",
-                    "example": "Neko Tunneling ltd"
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 },
                 "payload_ws": {
-                    "$ref": "#/definitions/dto.PayloadWSData"
+                    "$ref": "#/definitions/model.PayloadWSData"
                 },
                 "port": {
-                    "$ref": "#/definitions/dto.PortData"
+                    "$ref": "#/definitions/model.PortData"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 }
             }
         },
-        "dto.SuccessRes": {
+        "model.SuccessResponse": {
             "type": "object",
             "properties": {
                 "data": {},
                 "message": {
-                    "type": "string",
-                    "example": "ok"
+                    "type": "string"
                 },
                 "success": {
-                    "type": "boolean",
-                    "example": true
+                    "type": "boolean"
                 }
             }
         },
-        "dto.TrojanData": {
+        "model.TrojanData": {
             "type": "object",
             "properties": {
                 "city": {
-                    "type": "string",
-                    "example": "Jakarta"
+                    "type": "string"
                 },
                 "expired": {
-                    "type": "string",
-                    "example": "2006-01-02 15:04:05"
+                    "type": "string"
                 },
                 "hostname": {
-                    "type": "string",
-                    "example": "domain.com"
+                    "type": "string"
                 },
                 "isp": {
-                    "type": "string",
-                    "example": "Neko Tunneling ltd"
+                    "type": "string"
                 },
                 "link": {
-                    "$ref": "#/definitions/dto.XrayLinkData"
+                    "$ref": "#/definitions/model.XrayLinkData"
                 },
                 "password": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 },
                 "path": {
-                    "$ref": "#/definitions/dto.PathData"
+                    "$ref": "#/definitions/model.PathData"
                 },
                 "port": {
-                    "$ref": "#/definitions/dto.PortData"
+                    "$ref": "#/definitions/model.PortData"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 }
             }
         },
-        "dto.VlessData": {
+        "model.VlessData": {
             "type": "object",
             "properties": {
                 "city": {
-                    "type": "string",
-                    "example": "Jakarta"
+                    "type": "string"
                 },
                 "expired": {
-                    "type": "string",
-                    "example": "2006-01-02 15:04:05"
+                    "type": "string"
                 },
                 "hostname": {
-                    "type": "string",
-                    "example": "domain.com"
+                    "type": "string"
                 },
                 "isp": {
-                    "type": "string",
-                    "example": "Neko Tunneling ltd"
+                    "type": "string"
                 },
                 "link": {
-                    "$ref": "#/definitions/dto.XrayLinkData"
+                    "$ref": "#/definitions/model.XrayLinkData"
                 },
                 "password": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 },
                 "path": {
-                    "$ref": "#/definitions/dto.PathData"
+                    "$ref": "#/definitions/model.PathData"
                 },
                 "port": {
-                    "$ref": "#/definitions/dto.PortData"
+                    "$ref": "#/definitions/model.PortData"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 }
             }
         },
-        "dto.VmessData": {
+        "model.VmessData": {
             "type": "object",
             "properties": {
                 "city": {
-                    "type": "string",
-                    "example": "Jakarta"
+                    "type": "string"
                 },
                 "expired": {
-                    "type": "string",
-                    "example": "2006-01-02 15:04:05"
+                    "type": "string"
                 },
                 "hostname": {
-                    "type": "string",
-                    "example": "domain.com"
+                    "type": "string"
                 },
                 "isp": {
-                    "type": "string",
-                    "example": "Neko Tunneling ltd"
+                    "type": "string"
                 },
                 "link": {
-                    "$ref": "#/definitions/dto.XrayLinkData"
+                    "$ref": "#/definitions/model.XrayLinkData"
                 },
                 "password": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 },
                 "path": {
-                    "$ref": "#/definitions/dto.PathData"
+                    "$ref": "#/definitions/model.PathData"
                 },
                 "port": {
-                    "$ref": "#/definitions/dto.PortData"
+                    "$ref": "#/definitions/model.PortData"
                 },
                 "username": {
-                    "type": "string",
-                    "example": "neko123"
+                    "type": "string"
                 }
             }
         },
-        "dto.XrayLinkData": {
+        "model.XrayLinkData": {
             "type": "object",
             "properties": {
                 "grpc": {

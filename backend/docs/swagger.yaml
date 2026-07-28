@@ -1,16 +1,14 @@
 basePath: /
 definitions:
-  dto.ErrorRes:
+  model.ErrorResponse:
     properties:
       errors: {}
       message:
-        example: "no"
         type: string
       success:
-        example: false
         type: boolean
     type: object
-  dto.PathData:
+  model.PathData:
     properties:
       grpc:
         type: string
@@ -19,15 +17,19 @@ definitions:
       ws:
         type: string
     type: object
-  dto.PayloadWSData:
+  model.PayloadWSData:
     properties:
       payloadcdn:
         type: string
       payloadwithpath:
         type: string
     type: object
-  dto.PortData:
+  model.PortData:
     properties:
+      grpc:
+        items:
+          type: string
+        type: array
       none:
         items:
           type: string
@@ -41,123 +43,97 @@ definitions:
           type: string
         type: array
     type: object
-  dto.SSHData:
+  model.SSHData:
     properties:
       city:
-        example: Jakarta
         type: string
       expired:
-        example: "2006-01-02 15:04:05"
         type: string
       hostname:
-        example: domain.com
         type: string
       isp:
-        example: Neko Tunneling ltd
         type: string
       password:
-        example: neko123
         type: string
       payload_ws:
-        $ref: '#/definitions/dto.PayloadWSData'
+        $ref: '#/definitions/model.PayloadWSData'
       port:
-        $ref: '#/definitions/dto.PortData'
+        $ref: '#/definitions/model.PortData'
       username:
-        example: neko123
         type: string
     type: object
-  dto.SuccessRes:
+  model.SuccessResponse:
     properties:
       data: {}
       message:
-        example: ok
         type: string
       success:
-        example: true
         type: boolean
     type: object
-  dto.TrojanData:
+  model.TrojanData:
     properties:
       city:
-        example: Jakarta
         type: string
       expired:
-        example: "2006-01-02 15:04:05"
         type: string
       hostname:
-        example: domain.com
         type: string
       isp:
-        example: Neko Tunneling ltd
         type: string
       link:
-        $ref: '#/definitions/dto.XrayLinkData'
+        $ref: '#/definitions/model.XrayLinkData'
       password:
-        example: neko123
         type: string
       path:
-        $ref: '#/definitions/dto.PathData'
+        $ref: '#/definitions/model.PathData'
       port:
-        $ref: '#/definitions/dto.PortData'
+        $ref: '#/definitions/model.PortData'
       username:
-        example: neko123
         type: string
     type: object
-  dto.VlessData:
+  model.VlessData:
     properties:
       city:
-        example: Jakarta
         type: string
       expired:
-        example: "2006-01-02 15:04:05"
         type: string
       hostname:
-        example: domain.com
         type: string
       isp:
-        example: Neko Tunneling ltd
         type: string
       link:
-        $ref: '#/definitions/dto.XrayLinkData'
+        $ref: '#/definitions/model.XrayLinkData'
       password:
-        example: neko123
         type: string
       path:
-        $ref: '#/definitions/dto.PathData'
+        $ref: '#/definitions/model.PathData'
       port:
-        $ref: '#/definitions/dto.PortData'
+        $ref: '#/definitions/model.PortData'
       username:
-        example: neko123
         type: string
     type: object
-  dto.VmessData:
+  model.VmessData:
     properties:
       city:
-        example: Jakarta
         type: string
       expired:
-        example: "2006-01-02 15:04:05"
         type: string
       hostname:
-        example: domain.com
         type: string
       isp:
-        example: Neko Tunneling ltd
         type: string
       link:
-        $ref: '#/definitions/dto.XrayLinkData'
+        $ref: '#/definitions/model.XrayLinkData'
       password:
-        example: neko123
         type: string
       path:
-        $ref: '#/definitions/dto.PathData'
+        $ref: '#/definitions/model.PathData'
       port:
-        $ref: '#/definitions/dto.PortData'
+        $ref: '#/definitions/model.PortData'
       username:
-        example: neko123
         type: string
     type: object
-  dto.XrayLinkData:
+  model.XrayLinkData:
     properties:
       grpc:
         type: string
@@ -178,6 +154,230 @@ info:
   title: Neko Tunneling API
   version: "1.0"
 paths:
+  /vps/create/ssh:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Pasword akun (akan dibuat random jika kosong)
+        in: formData
+        name: password
+        type: string
+      - description: Limit IP (unlimited jika kosong)
+        in: formData
+        name: limit_ip
+        type: integer
+      - description: Limit Quota (unlimited jika kosong)
+        in: formData
+        name: limit_quota
+        type: integer
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.SSHData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Akun SSH
+      tags:
+      - Create Akun
+  /vps/create/trojan:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Pasword akun (akan dibuat random jika kosong)
+        in: formData
+        name: password
+        type: string
+      - description: Limit IP (unlimited jika kosong)
+        in: formData
+        name: limit_ip
+        type: integer
+      - description: Limit Quota (unlimited jika kosong)
+        in: formData
+        name: limit_quota
+        type: integer
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TrojanData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Akun Trojan
+      tags:
+      - Create Akun
+  /vps/create/vless:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Pasword akun (akan dibuat random jika kosong)
+        in: formData
+        name: password
+        type: string
+      - description: Limit IP (unlimited jika kosong)
+        in: formData
+        name: limit_ip
+        type: integer
+      - description: Limit Quota (unlimited jika kosong)
+        in: formData
+        name: limit_quota
+        type: integer
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.VlessData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Akun Vless
+      tags:
+      - Create Akun
+  /vps/create/vmess:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Pasword akun (akan dibuat random jika kosong)
+        in: formData
+        name: password
+        type: string
+      - description: Limit IP (unlimited jika kosong)
+        in: formData
+        name: limit_ip
+        type: integer
+      - description: Limit Quota (unlimited jika kosong)
+        in: formData
+        name: limit_quota
+        type: integer
+      - description: Durasi masa aktif (hari)
+        in: formData
+        name: expired
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.VmessData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Akun Vmess
+      tags:
+      - Create Akun
   /vps/trial/ssh:
     post:
       consumes:
@@ -195,23 +395,23 @@ paths:
           description: ok
           schema:
             allOf:
-            - $ref: '#/definitions/dto.SuccessRes'
+            - $ref: '#/definitions/model.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.SSHData'
+                  $ref: '#/definitions/model.SSHData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "422":
           description: Unprocessable Entity
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Trial Akun SSH
@@ -234,23 +434,23 @@ paths:
           description: ok
           schema:
             allOf:
-            - $ref: '#/definitions/dto.SuccessRes'
+            - $ref: '#/definitions/model.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.TrojanData'
+                  $ref: '#/definitions/model.TrojanData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "422":
           description: Unprocessable Entity
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Trial Akun Trojan
@@ -273,23 +473,23 @@ paths:
           description: ok
           schema:
             allOf:
-            - $ref: '#/definitions/dto.SuccessRes'
+            - $ref: '#/definitions/model.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.VlessData'
+                  $ref: '#/definitions/model.VlessData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "422":
           description: Unprocessable Entity
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Trial Akun Vless
@@ -312,23 +512,23 @@ paths:
           description: ok
           schema:
             allOf:
-            - $ref: '#/definitions/dto.SuccessRes'
+            - $ref: '#/definitions/model.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.VmessData'
+                  $ref: '#/definitions/model.VmessData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "422":
           description: Unprocessable Entity
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorRes'
+            $ref: '#/definitions/model.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Trial Akun Vmess
