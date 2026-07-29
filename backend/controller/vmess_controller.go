@@ -471,3 +471,94 @@ func (ctrl *VmessController) Renew(c fiber.Ctx) error {
 		},
 	})
 }
+
+// DetailVmess godoc
+// @Summary   Detail Akun Vmess
+// @Tags      Detail Akun
+// @Accept    x-www-form-urlencoded
+// @Produce   json
+// @Param     username path string true "Username akun"
+// @Success   200 {object} model.SuccessResponse{data=model.VmessData} "ok"
+// @Failure   422 {object} model.ErrorResponse "Unprocessable Entity"
+// @Failure   500 {object} model.ErrorResponse "Internal Server Error"
+// @Security  BearerAuth
+// @Router    /vps/detail/vmess/{username} [get]
+func (ctrl *VmessController) Detail(c fiber.Ctx) error {
+	username := strings.TrimSpace(strings.ToLower(c.Params("username")))
+	if username == "" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak boleh kosong"},
+			},
+		})
+	}
+
+	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	existing, err := ctrl.userRepository.FindByUsername(execCtx, username)
+	if err != nil {
+		slog.Error("Gagal mengecek username",
+			slog.String("protocol", "vmess"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "pengecekan username gagal",
+		})
+	}
+	if existing == nil || existing.Protocol != "vmess" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak ditemukan"},
+			},
+		})
+	}
+	if existing.Status != "active" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"status user tidak aktif"},
+			},
+		})
+	}
+
+	hostname := utils.ReadFile(ctrl.cfg.CacheDomainPath)
+	isp := utils.ReadFile(ctrl.cfg.CacheISPPath)
+	city := utils.ReadFile(ctrl.cfg.CacheCityPath)
+
+	return c.Status(fiber.StatusOK).JSON(&model.SuccessResponse{
+		Success: true,
+		Message: "ok",
+		Data: model.VmessData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: existing.Username,
+			Password: existing.Password,
+			Expired:  existing.ExpiredAt.Format("2006-01-02 15:04:05"),
+			Port: model.PortData{
+				None: []string{"80"},
+				TLS:  []string{"443"},
+				GRPC: []string{"443"},
+			},
+			Path: model.PathData{
+				WS:      "vmess-ws",
+				Upgrade: "vmess-up",
+				GRPC:    "vmess-grpc",
+			},
+			Link: model.XrayLinkData{
+				None:   service.GenerateVmessLink(existing.Username, hostname, 80, existing.Password, "ws", "vmess-ws", false),
+				TLS:    service.GenerateVmessLink(existing.Username, hostname, 443, existing.Password, "ws", "vmess-ws", true),
+				GRPC:   service.GenerateVmessLink(existing.Username, hostname, 443, existing.Password, "grpc", "vmess-grpc", true),
+				UpNone: service.GenerateVmessLink(existing.Username, hostname, 80, existing.Password, "httpupgrade", "vmess-up", false),
+				UpTLS:  service.GenerateVmessLink(existing.Username, hostname, 443, existing.Password, "httpupgrade", "vmess-up", true),
+			},
+		},
+	})
+}

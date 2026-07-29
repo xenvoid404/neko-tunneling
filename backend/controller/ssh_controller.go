@@ -456,8 +456,87 @@ func (ctrl *SSHController) Renew(c fiber.Ctx) error {
 	})
 }
 
-func DetailSSH() {
+// DetailSSH godoc
+// @Summary   Detail Akun SSH
+// @Tags      Detail Akun
+// @Accept    x-www-form-urlencoded
+// @Produce   json
+// @Param     username path string true "Username akun"
+// @Success   200 {object} model.SuccessResponse{data=model.SSHData} "ok"
+// @Failure   422 {object} model.ErrorResponse "Unprocessable Entity"
+// @Failure   500 {object} model.ErrorResponse "Internal Server Error"
+// @Security  BearerAuth
+// @Router    /vps/detail/ssh/{username} [get]
+func (ctrl *SSHController) Detail(c fiber.Ctx) error {
+	username := strings.TrimSpace(strings.ToLower(c.Params("username")))
+	if username == "" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak boleh kosong"},
+			},
+		})
+	}
 
+	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	existing, err := ctrl.userRepository.FindByUsername(execCtx, username)
+	if err != nil {
+		slog.Error("Gagal mengecek username",
+			slog.String("protocol", "ssh"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "pengecekan username gagal",
+		})
+	}
+	if existing == nil || existing.Protocol != "ssh" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak ditemukan"},
+			},
+		})
+	}
+	if existing.Status != "active" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"status user tidak aktif"},
+			},
+		})
+	}
+
+	hostname := utils.ReadFile(ctrl.cfg.CacheDomainPath)
+	isp := utils.ReadFile(ctrl.cfg.CacheISPPath)
+	city := utils.ReadFile(ctrl.cfg.CacheCityPath)
+
+	return c.Status(fiber.StatusOK).JSON(&model.SuccessResponse{
+		Success: true,
+		Message: "ok",
+		Data: model.SSHData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: existing.Username,
+			Password: existing.Password,
+			Expired:  existing.ExpiredAt.Format("2006-01-02 15:04:05"),
+			Port: model.PortData{
+				None:  []string{"80", "8080"},
+				TLS:   []string{"443", "444", "8443"},
+				UDPGW: []string{"7100", "7200", "7300", "7400", "7500", "7600"},
+			},
+			PayloadWS: model.PayloadWSData{
+				PayloadCDN:      "GET / HTTP/1.1[crlf]Host: [host_port][crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
+				PayloadWithPath: "GET /worryfree/ssh HTTP/1.1[crlf]Host: BUG[crlf]User-Agent: [ua][crlf]Upgrade: websocket[crlf][crlf]",
+			},
+		},
+	})
 }
 
 func ListSSH() {

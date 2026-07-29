@@ -46,4 +46,9 @@ func (r *Router) SetupAPIRoutes() {
 	api.Delete("/delete/vmess/:username", vmessController.Delete)
 	api.Delete("/delete/vless/:username", vlessController.Delete)
 	api.Delete("/delete/trojan/:username", trojanController.Delete)
+
+	api.Get("/detail/ssh/:username", sshController.Detail)
+	api.Get("/detail/vmess/:username", vmessController.Detail)
+	api.Get("/detail/vless/:username", vlessController.Detail)
+	api.Get("/detail/trojan/:username", trojanController.Detail)
 }

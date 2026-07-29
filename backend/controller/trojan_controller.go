@@ -465,3 +465,91 @@ func (ctrl *TrojanController) Renew(c fiber.Ctx) error {
 		},
 	})
 }
+
+// DetailTrojan godoc
+// @Summary   Detail Akun Trojan
+// @Tags      Detail Akun
+// @Accept    x-www-form-urlencoded
+// @Produce   json
+// @Param     username path string true "Username akun"
+// @Success   200 {object} model.SuccessResponse{data=model.TrojanData} "ok"
+// @Failure   422 {object} model.ErrorResponse "Unprocessable Entity"
+// @Failure   500 {object} model.ErrorResponse "Internal Server Error"
+// @Security  BearerAuth
+// @Router    /vps/detail/trojan/{username} [get]
+func (ctrl *TrojanController) Detail(c fiber.Ctx) error {
+	username := strings.TrimSpace(strings.ToLower(c.Params("username")))
+	if username == "" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak boleh kosong"},
+			},
+		})
+	}
+
+	execCtx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	existing, err := ctrl.userRepository.FindByUsername(execCtx, username)
+	if err != nil {
+		slog.Error("Gagal mengecek username",
+			slog.String("protocol", "trojan"),
+			slog.String("username", username),
+			slog.Any("error", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "pengecekan username gagal",
+		})
+	}
+	if existing == nil || existing.Protocol != "trojan" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"username tidak ditemukan"},
+			},
+		})
+	}
+	if existing.Status != "active" {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(&model.ErrorResponse{
+			Success: false,
+			Message: "no",
+			Errors: fiber.Map{
+				"username": []string{"status user tidak aktif"},
+			},
+		})
+	}
+
+	hostname := utils.ReadFile(ctrl.cfg.CacheDomainPath)
+	isp := utils.ReadFile(ctrl.cfg.CacheISPPath)
+	city := utils.ReadFile(ctrl.cfg.CacheCityPath)
+
+	return c.Status(fiber.StatusOK).JSON(&model.SuccessResponse{
+		Success: true,
+		Message: "ok",
+		Data: model.TrojanData{
+			Hostname: hostname,
+			ISP:      isp,
+			City:     city,
+			Username: existing.Username,
+			Password: existing.Password,
+			Expired:  existing.ExpiredAt.Format("2006-01-02 15:04:05"),
+			Port: model.PortData{
+				TLS:  []string{"443"},
+				GRPC: []string{"443"},
+			},
+			Path: model.PathData{
+				WS:      "trojan-ws",
+				Upgrade: "trojan-up",
+				GRPC:    "trojan-grpc",
+			},
+			Link: model.XrayLinkData{
+				TLS:   service.GenerateTrojanLink(existing.Username, hostname, 443, existing.Password, "ws", "trojan-ws", true),
+				GRPC:  service.GenerateTrojanLink(existing.Username, hostname, 443, existing.Password, "grpc", "trojan-grpc", true),
+				UpTLS: service.GenerateTrojanLink(existing.Username, hostname, 443, existing.Password, "httpupgrade", "trojan-up", true),
+			},
+		},
+	})
+}

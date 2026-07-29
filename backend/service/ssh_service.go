@@ -14,7 +14,7 @@ func NewSSHService() *SSHService {
 }
 
 func (s *SSHService) AddUser(ctx context.Context, username, password string) error {
-	cmdAdd := exec.CommandContext(ctx, "useradd", "-M", "-N", "-s", "/bin/false", "-e", username)
+	cmdAdd := exec.CommandContext(ctx, "useradd", "-M", "-N", "-s", "/bin/false", username)
 	if output, err := cmdAdd.CombinedOutput(); err != nil {
 		return fmt.Errorf("useradd gagal: %w (output: %s)", err, strings.TrimSpace(string(output)))
 	}

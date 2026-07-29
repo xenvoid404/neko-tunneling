@@ -523,6 +523,146 @@ paths:
       summary: Delete Akun Vmess
       tags:
       - Delete Akun
+  /vps/detail/ssh/{username}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.SSHData'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail Akun SSH
+      tags:
+      - Detail Akun
+  /vps/detail/trojan/{username}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TrojanData'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail Akun Trojan
+      tags:
+      - Detail Akun
+  /vps/detail/vless/{username}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.VlessData'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail Akun Vless
+      tags:
+      - Detail Akun
+  /vps/detail/vmess/{username}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Username akun
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.VmessData'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail Akun Vmess
+      tags:
+      - Detail Akun
   /vps/renew/ssh/{username}:
     patch:
       consumes:
